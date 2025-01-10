@@ -36,14 +36,20 @@ if __name__ == "__main__":
     kmeans = KMeansClustering(embeddings, random_state)
     agglomerative = AgglomerativeClustering(embeddings, random_state)
     dbscan = DBSCANClustering(embeddings, random_state)
+    optics = OPTICSClustering(embeddings, None)
 
-    """ best_k = kmeans.find_elbow(15, output=kmeans_output_path)
+    best_k = kmeans.find_elbow(15, output=kmeans_output_path)
     print("=============================================")
     print("KMeansClustering")
     print(f'Best K: {best_k}')
     labels_kmeans = kmeans.clustering(best_k, reduction='pca', output=kmeans_output_path)
     kmeans.clustering(best_k, reduction='tsne', output=kmeans_output_path)
 
+    for cluster in np.unique(labels_kmeans):
+        kmeans.show_cluster_images(cluster, labels_kmeans, )
+
+
+    """"
     print("=============================================")
     
     best_k, best_linkage, best_score = agglomerative.find_best_agglomerative_clustering(
@@ -51,6 +57,7 @@ if __name__ == "__main__":
         metric='silhouette', 
         output=agglomerative_output_path
     )
+
     print("AgglomerativeClustering")
     print(f"Best K: {best_k}, Best Linkage: {best_linkage}, Best Score: {best_score}")
 
@@ -68,10 +75,10 @@ if __name__ == "__main__":
         output=agglomerative_output_path
     )
     print("=============================================") """
-    print("DBSCANClustering")
+    """ print("DBSCANClustering")
     best_eps, best_min_samples, best_score = dbscan.find_best_DBSCAN(
-        eps_range= np.arange(0.1, 2.5, 0.2),
-        min_samples_range=range(1, 10),
+        eps_range= np.linspace(0.3, 2.0, 5),
+        min_samples_range=np.arange(2, 10),
         metric='silhouette',
         plot=True,
         output=dbscan_output_path
@@ -79,5 +86,17 @@ if __name__ == "__main__":
 
     print(f"Best EPS: {best_eps}, Best Min Samples: {best_min_samples}, Best Score: {best_score}")
     labels_dbscan = dbscan.clustering(best_eps, best_min_samples, reduction='pca', output=dbscan_output_path)
-    dbscan.clustering(best_eps, best_min_samples, reduction='pca', output=dbscan_output_path)
+    dbscan.clustering(best_eps, best_min_samples, reduction='tsne', output=dbscan_output_path) """
+
+    """print("OPTICSClustering")
+    best_min_samples, best_score = optics.find_best_OPTICS(
+        min_samples_range=np.arange(2, 10),
+        metric='silhouette',
+        plot=True,
+        output=optics_output_path
+    )
+
+    print(f"Best Min Samples: {best_min_samples}, Best Score: {best_score}")
+    labels_dbscan = optics.clustering(best_min_samples, reduction='pca', output=optics_output_path)
+    optics.clustering(best_min_samples, reduction='tsne', output=optics_output_path)"""
 

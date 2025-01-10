@@ -2,7 +2,6 @@ import os
 
 import sklearn.cluster
 
-
 import matplotlib.pyplot as plt
 import numpy as np
 

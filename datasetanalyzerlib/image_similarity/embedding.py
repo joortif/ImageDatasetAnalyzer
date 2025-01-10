@@ -19,17 +19,19 @@ class Embedding:
         self.model = AutoModel.from_pretrained(model_name)
         self.batch_size = batch_size
 
-    def generate_embedding(self, directory: str, device: torch.device = None):
+    def generate_embedding(self, directory: str=None, dataset: Dataset=None, device: torch.device = None):
         """
         Processes all images in the specified directory in batches.
 
         Args: 
             directory (str): Directory containing images.
+            dataset (Dataset, optional): Dataset of images
             device (torch.device, optional): Device to use for computation. Defaults to the best available device.
 
         Returns:
             torch.Tensor: Embeddings generated for all images in the directory.
         """
+        
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             if device.type == "cuda":
