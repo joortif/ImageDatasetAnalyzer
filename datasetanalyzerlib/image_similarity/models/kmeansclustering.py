@@ -4,10 +4,13 @@ import os
 
 from sklearn.cluster import KMeans
 
+import shutil
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
+from datasetanalyzerlib.image_similarity.imagedataset import ImageDataset
 
 class KMeansClustering(ClusteringBase): 
 
@@ -47,6 +50,7 @@ class KMeansClustering(ClusteringBase):
                 output = os.path.join(output, "kmeans_elbow.png")
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
+                plt.close()
             else:
                 plt.show()
         
@@ -55,14 +59,63 @@ class KMeansClustering(ClusteringBase):
 
         return best_k
 
-    def clustering(self, k: int, reduction='tsne',  output: str=None) -> np.ndarray:
+    def find_best_n_clusters(self, n_clusters_range: range, metric: str, plot: bool=True, output: str=None) -> tuple:
+        """
+        Evaluates KMeans clustering using the specified metric.
+
+        Parameters:
+            n_clusters_range (range): The range of 'n_clusters' values to evaluate.
+            metric (str, optional): The evaluation metric to use ('silhouette', 'calinski', 'davies'). Defaults to 'silhouette'.
+            plot (bool, optional): Whether to plot the results. Defaults to True.
+            output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
+
+        Returns:
+            tuple: The best k and the best score.
+        """
+
+        scoring_function = self.evaluate_metric(metric)
+        results = []
+        
+        for k in n_clusters_range:
+            kmeans = KMeans(n_clusters=k)
+            labels = kmeans.fit_predict(self.embeddings)
+
+            score = scoring_function(self.embeddings, labels)
+            results.append((k, score))
+        
+        scores = [score for _, score in results]
+
+        if plot:
+            plt.figure(figsize=(10, 7))
+            plt.plot(n_clusters_range, scores, marker='o', linestyle='--')
+            plt.title(f'KMeans evaluation ({metric.capitalize()} Score)')
+            plt.xlabel('n_clusters values')
+            plt.ylabel(f'{metric.capitalize()} Score')
+            plt.xticks(n_clusters_range)
+            plt.grid(True)
+            
+            if output:
+                output = os.path.join(output, f"kmeans_evaluation_{metric.lower()}.png")
+                plt.savefig(output, format='png')
+                print(f"Plot saved to {output}")
+                plt.close()
+            else:
+                plt.show()
+            
+
+        best_combination = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
+        best_n_clusters, best_score = best_combination
+
+        return best_n_clusters, best_score
+
+    def clustering(self, n_clusters: int, reduction='tsne',  output: str=None) -> np.ndarray:
         """
         Applies KMeans clustering to the given embeddings, reduces dimensionality for visualization, 
         and optionally saves or displays a scatter plot of the clusters.
 
         Parameters:
             embeddings (array): High-dimensional data to be clustered, typically a 2D array.
-            k (int): Number of clusters for KMeans.
+            n_clusters (int): Number of clusters for KMeans.
             random_state (int): Random seed for reproducibility.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
             reduction (str, optional): Dimensionality reduction method ('tsne' or 'pca'). Defaults to 'tsne'.
@@ -70,13 +123,106 @@ class KMeansClustering(ClusteringBase):
         Returns:
             array: Cluster labels assigned by KMeans for each data point.
         """
-        kmeans = KMeans(n_clusters=k, random_state=self.random_state)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=self.random_state)
         labels = kmeans.fit_predict(self.embeddings)
 
         embeddings_2d = self.reduce_dimensions(reduction)
 
-        self.plot_clusters(embeddings_2d, labels, k, reduction, output)
+        self.plot_clusters(embeddings_2d, labels, n_clusters, reduction, output)
         
         return labels
     
+    def select_balanced_images(self, dataset: ImageDataset, n_clusters: int,  reduction: float, selection_type: str = "representative", diverse_percentage: float = 0.1,
+                                     output_directory: str = None) -> ImageDataset:
+        """
+        Selects a subset of images from a dataset based on KMeans clustering and its centroids.
+        The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
 
+        Args:
+            embeddings (np.ndarray): Embeddings of the dataset images.
+            dataset (ImageDataset): The dataset containing the images.
+            n_clusters (int): Number of clusters for KMeans.
+            cluster_centers (np.ndarray): Centroids of the clusters.
+            reduction (float, optional): Percentage of the total dataset to retain. 
+            selection_type (str, optional): Determines whether to select "representative" or "diverse" images. Defaults to "representative".
+            diverse_percentage (float, optional): Percentage of the cluster's images to select as diverse.
+            output_directory (str, optional): Directory to save the reduced dataset. If None, the folder will not be created.
+
+        Returns:
+            ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
+        """
+
+        if selection_type.lower() != 'representative' and selection_type.lower() != 'diverse':
+            print("Invalid value for selection_type, must be 'representative' or 'diverse'.")
+            return None
+
+        kmeans = KMeans(n_clusters=n_clusters, random_state=self.random_state)
+        labels = kmeans.fit_predict(self.embeddings)
+        cluster_centers = kmeans.cluster_centers_
+
+        total_images = len(dataset)
+        num_selected_images_total = int(total_images * reduction)
+        group_sizes = [np.sum(labels == cluster_idx) for cluster_idx in range(len(cluster_centers))]
+
+        if output_directory:
+            output_directory = os.path.join("reduced_dataset")
+            os.makedirs(output_directory, exist_ok=True)
+
+        reduced_dataset_files = []
+
+        for cluster_idx in range(len(cluster_centers)):
+            cluster_embeddings = self.embeddings[labels == cluster_idx]
+            cluster_filenames = np.array([dataset.image_files[i] for i in range(total_images) if labels[i] == cluster_idx])
+            print(f"Cluster {cluster_idx}: {cluster_filenames}")
+
+            proportion = group_sizes[cluster_idx] / total_images
+            num_selected_images = int(proportion * num_selected_images_total)
+            num_diverse_images = int(num_selected_images * diverse_percentage)
+
+            num_selected_images = min(num_selected_images, len(cluster_filenames))
+
+            if num_selected_images == 0 and len(cluster_filenames) > 0:
+                num_selected_images = 1
+
+            if num_selected_images > len(cluster_filenames):
+                num_selected_images = len(cluster_filenames)
+
+            cluster_center = cluster_centers[cluster_idx]
+            distances = np.linalg.norm(cluster_embeddings - cluster_center, axis=1)
+
+            if selection_type.lower() == "representative":
+                closest_indices = distances.argsort()[:num_selected_images - num_diverse_images]
+                selected_images = cluster_filenames[closest_indices]
+            else:
+                closest_indices = distances.argsort()[-(num_selected_images - num_diverse_images):]
+                selected_images = cluster_filenames[closest_indices]
+
+            farthest_indices = distances.argsort()[-num_diverse_images:]
+            diverse_images = cluster_filenames[farthest_indices]
+
+            print(f"Closest: {closest_indices}")
+            print(f"Farthest: {farthest_indices}")
+
+            selected_images = np.concatenate((selected_images, diverse_images))
+
+            selected_images = np.unique(selected_images)
+
+            print(f"Cluster {cluster_idx}: {selected_images}, {len(selected_images)}")
+
+            reduced_dataset_files.extend(selected_images)
+
+            if output_directory:
+                for filename in selected_images:
+                    src_path = os.path.join(dataset.directory, filename)
+                    dst_path = os.path.join(output_directory, filename)
+                    shutil.copy(src_path, dst_path)
+
+        if output_directory:
+            print(f"Reduced dataset saved to: {output_directory}")
+        else:
+            output_directory = dataset.directory
+
+        reduced_dataset = ImageDataset(output_directory, reduced_dataset_files, processor=dataset.processor)
+        print(f"Reduced dataset length: {len(reduced_dataset)}")
+
+        return reduced_dataset

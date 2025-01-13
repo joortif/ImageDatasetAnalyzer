@@ -11,6 +11,7 @@ from datasetanalyzerlib.image_similarity.models.kmeansclustering import KMeansCl
 from datasetanalyzerlib.image_similarity.models.agglomerativeclustering import AgglomerativeClustering
 from datasetanalyzerlib.image_similarity.models.dbscanclustering import DBSCANClustering
 from datasetanalyzerlib.image_similarity.models.opticsclustering import OPTICSClustering
+from datasetanalyzerlib.image_similarity.imagedataset import ImageDataset
 
 
 if __name__ == "__main__":
@@ -25,29 +26,44 @@ if __name__ == "__main__":
     dbscan_output_path = os.path.join(output_path, "dbscan")
     optics_output_path = os.path.join(output_path, "optics")
 
+    kmeans_elbow_path = os.path.join(kmeans_output_path, "elbow")
+    kmeans_silhouette_path = os.path.join(kmeans_output_path, "silhouette")
 
     random_state = 123
 
-    #embeddings = emb.generate_embedding(dir)
+    dataset = ImageDataset(dir)
+    #embeddings = emb.generate_embeddings(dataset)
 
     #np.save('embeddings.npy', embeddings)
-    embeddings =  np.load('embeddings.npy')
+    embeddings = np.load('embeddings.npy')
+    
 
     kmeans = KMeansClustering(embeddings, random_state)
     agglomerative = AgglomerativeClustering(embeddings, random_state)
     dbscan = DBSCANClustering(embeddings, random_state)
     optics = OPTICSClustering(embeddings, None)
 
-    best_k = kmeans.find_elbow(15, output=kmeans_output_path)
+    """best_k_elbow = kmeans.find_elbow(25, output=kmeans_elbow_path)
+    best_k_silhouette, score = kmeans.find_best_n_clusters(range(2,25), 'silhouette', output=kmeans_silhouette_path)
     print("=============================================")
     print("KMeansClustering")
-    print(f'Best K: {best_k}')
-    labels_kmeans = kmeans.clustering(best_k, reduction='pca', output=kmeans_output_path)
-    kmeans.clustering(best_k, reduction='tsne', output=kmeans_output_path)
+    print(f'Best K (elbow): {best_k_elbow}')
+    print(f'Best K (silhouette score): {best_k_silhouette}, Score: {score}')
+    labels_kmeans = kmeans.clustering(best_k_elbow, reduction='pca', output=kmeans_elbow_path)
+    kmeans.clustering(best_k_elbow, reduction='tsne', output=kmeans_elbow_path)
 
     for cluster in np.unique(labels_kmeans):
-        kmeans.show_cluster_images(cluster, labels_kmeans, )
+        kmeans.show_cluster_images(cluster, labels_kmeans, dataset, output=kmeans_elbow_path)
+    
+    labels_kmeans = kmeans.clustering(best_k_silhouette, reduction='pca', output=kmeans_silhouette_path)
+    kmeans.clustering(best_k_silhouette, reduction='tsne', output=kmeans_silhouette_path)
 
+    for cluster in np.unique(labels_kmeans):
+        kmeans.show_cluster_images(cluster, labels_kmeans, dataset, output=kmeans_silhouette_path)"""
+    
+    #, output_directory=os.path.join(kmeans_elbow_path, "reduced_dataset")
+
+    reduced_dataset = kmeans.select_balanced_images(dataset, 4, 0.7, diverse_percentage=0.5)
 
     """"
     print("=============================================")

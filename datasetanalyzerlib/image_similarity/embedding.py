@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
 
-from .dataset import Dataset
+from .imagedataset import ImageDataset
 
 class Embedding:
     def __init__(self, model_name: str, batch_size: int=8):
@@ -19,13 +19,12 @@ class Embedding:
         self.model = AutoModel.from_pretrained(model_name)
         self.batch_size = batch_size
 
-    def generate_embedding(self, directory: str=None, dataset: Dataset=None, device: torch.device = None):
+    def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
         """
-        Processes all images in the specified directory in batches.
+        Processes all images in the specified dataset in batches.
 
         Args: 
-            directory (str): Directory containing images.
-            dataset (Dataset, optional): Dataset of images
+            dataset (ImageDataset): Dataset of images
             device (torch.device, optional): Device to use for computation. Defaults to the best available device.
 
         Returns:
@@ -39,8 +38,9 @@ class Embedding:
                 print(f"Device not detected. Using GPU: {device_name}")
             else:
                 print("Device not detected. Using CPU.")
+
+        dataset.set_processor(self.processor)
         
-        dataset = Dataset(directory, self.processor)
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
         
         embeddings = []

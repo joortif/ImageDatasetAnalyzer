@@ -58,6 +58,7 @@ class AgglomerativeClustering(ClusteringBase):
                 output = os.path.join(output, f"agglomerative_clustering_evaluation_{metric.lower()}.png")
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
+                plt.close()
             else:
                 plt.show()
 

@@ -14,14 +14,13 @@ class OPTICSClustering(ClusteringBase):
         Evaluates OPTICS clustering using the specified metric, including noise points.
 
         Parameters:
-            eps_range (range): The range of 'eps' values to evaluate.
             min_samples_range (range): The range of 'min_samples' values to evaluate.
             metric (str, optional): The evaluation metric to use ('silhouette', 'calinski', 'davies'). Defaults to 'silhouette'.
             plot (bool, optional): Whether to plot the results. Defaults to True.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
 
         Returns:
-            tuple: The best 'eps', the best 'min_samples', and the best score.
+            tuple: The best 'min_samples' and the best score.
         """
 
         scoring_function = self.evaluate_metric(metric)
@@ -69,6 +68,7 @@ class OPTICSClustering(ClusteringBase):
                 output = os.path.join(output, f"optics_evaluation_{metric.lower()}.png")
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
+                plt.close()
             else:
                 plt.show()
 
