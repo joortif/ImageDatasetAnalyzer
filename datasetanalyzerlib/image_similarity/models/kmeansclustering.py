@@ -4,13 +4,11 @@ import os
 
 from sklearn.cluster import KMeans
 
-import shutil
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
-from datasetanalyzerlib.image_similarity.imagedataset import ImageDataset
+from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 
 class KMeansClustering(ClusteringBase): 
 
@@ -73,7 +71,7 @@ class KMeansClustering(ClusteringBase):
             tuple: The best k and the best score.
         """
 
-        scoring_function = self.evaluate_metric(metric)
+        scoring_function = self._evaluate_metric(metric)
         results = []
         
         for k in n_clusters_range:
@@ -132,97 +130,26 @@ class KMeansClustering(ClusteringBase):
         
         return labels
     
-    def select_balanced_images(self, dataset: ImageDataset, n_clusters: int,  reduction: float, selection_type: str = "representative", diverse_percentage: float = 0.1,
-                                     output_directory: str = None) -> ImageDataset:
+    def select_balanced_images(self, n_clusters: int, reduction: float=0.5, selection_type: str = "representative", 
+                               diverse_percentage: float = 0.1, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on KMeans clustering and its centroids.
         The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
 
         Args:
-            embeddings (np.ndarray): Embeddings of the dataset images.
-            dataset (ImageDataset): The dataset containing the images.
             n_clusters (int): Number of clusters for KMeans.
-            cluster_centers (np.ndarray): Centroids of the clusters.
-            reduction (float, optional): Percentage of the total dataset to retain. 
+            reduction (float, optional): Proportion of the dataset to retain. Defaults to 0.5. A value of 0.5 retains 50% of the dataset. 
             selection_type (str, optional): Determines whether to select "representative" or "diverse" images. Defaults to "representative".
-            diverse_percentage (float, optional): Percentage of the cluster's images to select as diverse.
+            diverse_percentage (float, optional): Percentage of images selected as diverse within each cluster. Defaults to 0.1.
             output_directory (str, optional): Directory to save the reduced dataset. If None, the folder will not be created.
 
         Returns:
             ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
         """
-
-        if selection_type.lower() != 'representative' and selection_type.lower() != 'diverse':
-            print("Invalid value for selection_type, must be 'representative' or 'diverse'.")
-            return None
-
         kmeans = KMeans(n_clusters=n_clusters, random_state=self.random_state)
         labels = kmeans.fit_predict(self.embeddings)
         cluster_centers = kmeans.cluster_centers_
 
-        total_images = len(dataset)
-        num_selected_images_total = int(total_images * reduction)
-        group_sizes = [np.sum(labels == cluster_idx) for cluster_idx in range(len(cluster_centers))]
+        reduced_dataset_kmeans = self._select_balanced_images(labels, cluster_centers, reduction, selection_type, diverse_percentage, False, output_directory)
 
-        if output_directory:
-            output_directory = os.path.join("reduced_dataset")
-            os.makedirs(output_directory, exist_ok=True)
-
-        reduced_dataset_files = []
-
-        for cluster_idx in range(len(cluster_centers)):
-            cluster_embeddings = self.embeddings[labels == cluster_idx]
-            cluster_filenames = np.array([dataset.image_files[i] for i in range(total_images) if labels[i] == cluster_idx])
-            print(f"Cluster {cluster_idx}: {cluster_filenames}")
-
-            proportion = group_sizes[cluster_idx] / total_images
-            num_selected_images = int(proportion * num_selected_images_total)
-            num_diverse_images = int(num_selected_images * diverse_percentage)
-
-            num_selected_images = min(num_selected_images, len(cluster_filenames))
-
-            if num_selected_images == 0 and len(cluster_filenames) > 0:
-                num_selected_images = 1
-
-            if num_selected_images > len(cluster_filenames):
-                num_selected_images = len(cluster_filenames)
-
-            cluster_center = cluster_centers[cluster_idx]
-            distances = np.linalg.norm(cluster_embeddings - cluster_center, axis=1)
-
-            if selection_type.lower() == "representative":
-                closest_indices = distances.argsort()[:num_selected_images - num_diverse_images]
-                selected_images = cluster_filenames[closest_indices]
-            else:
-                closest_indices = distances.argsort()[-(num_selected_images - num_diverse_images):]
-                selected_images = cluster_filenames[closest_indices]
-
-            farthest_indices = distances.argsort()[-num_diverse_images:]
-            diverse_images = cluster_filenames[farthest_indices]
-
-            print(f"Closest: {closest_indices}")
-            print(f"Farthest: {farthest_indices}")
-
-            selected_images = np.concatenate((selected_images, diverse_images))
-
-            selected_images = np.unique(selected_images)
-
-            print(f"Cluster {cluster_idx}: {selected_images}, {len(selected_images)}")
-
-            reduced_dataset_files.extend(selected_images)
-
-            if output_directory:
-                for filename in selected_images:
-                    src_path = os.path.join(dataset.directory, filename)
-                    dst_path = os.path.join(output_directory, filename)
-                    shutil.copy(src_path, dst_path)
-
-        if output_directory:
-            print(f"Reduced dataset saved to: {output_directory}")
-        else:
-            output_directory = dataset.directory
-
-        reduced_dataset = ImageDataset(output_directory, reduced_dataset_files, processor=dataset.processor)
-        print(f"Reduced dataset length: {len(reduced_dataset)}")
-
-        return reduced_dataset
+        return reduced_dataset_kmeans

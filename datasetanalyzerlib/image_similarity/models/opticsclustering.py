@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 
 from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
+from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 
 
 class OPTICSClustering(ClusteringBase):
@@ -23,7 +24,7 @@ class OPTICSClustering(ClusteringBase):
             tuple: The best 'min_samples' and the best score.
         """
 
-        scoring_function = self.evaluate_metric(metric)
+        scoring_function = self._evaluate_metric(metric)
         results = []
         
         for min_samples in min_samples_range:
@@ -99,3 +100,28 @@ class OPTICSClustering(ClusteringBase):
         self.plot_clusters(embeddings_2d, labels, num_clusters, reduction, output)
 
         return labels
+    
+    def select_balanced_images(self, min_samples: int, reduction: float=0.5, selection_type: str = "representative", 
+                               diverse_percentage: float = 0.1, include_outliers: bool=False, output_directory: str = None) -> ImageDataset:
+        """
+        Selects a subset of images from a dataset based on OPTICS clustering.
+        The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
+
+        Args:
+            min_samples (float): The minimum number of samples required to form a cluster in OPTICS.
+            reduction (float, optional): Percentage of the total dataset to retain. Defaults to 0.5. A value of 0.5 retains 50% of the dataset.  
+            selection_type (str, optional): Determines whether to select "representative" or "diverse" images. Defaults to "representative".
+            diverse_percentage (float, optional): Percentage of the cluster's images to select as diverse. Defaults to 0.1.
+            include_outliers (bool): Whether to include outliers (label -1) in the selection. Defaults to False.
+            output_directory (str, optional): Directory to save the reduced dataset. If None, the folder will not be created.
+
+        Returns:
+            ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
+        """
+        optics = OPTICS(min_samples=min_samples)
+        labels = optics.fit_predict(self.embeddings)
+
+        reduced_dataset_optics = self._select_balanced_images(labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+                                                              include_outliers=include_outliers, output_directory=output_directory)
+
+        return reduced_dataset_optics

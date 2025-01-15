@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
+from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 
 class AgglomerativeClustering(ClusteringBase):
 
@@ -35,7 +36,7 @@ class AgglomerativeClustering(ClusteringBase):
                 agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=k, linkage=linkage)
                 agglomerative_labels = agglomerative.fit_predict(self.embeddings)
 
-                scoring_function = self.evaluate_metric(metric)
+                scoring_function = self._evaluate_metric(metric)
 
                 score = scoring_function(self.embeddings, agglomerative_labels)
                 scores_by_linkage[linkage].append(score)
@@ -65,25 +66,50 @@ class AgglomerativeClustering(ClusteringBase):
         return best_k, best_linkage, best_score
 
 
-    def clustering(self, k: int, linkage: str, reduction='tsne', output: str=None) -> np.ndarray:
+    def clustering(self, num_clusters: int, linkage: str, reduction='tsne', output: str=None) -> np.ndarray:
         """
         Applies AgglomerativeClustering clustering to the given embeddings, reduces dimensionality for visualization, 
         and optionally saves or displays a scatter plot of the clusters.
 
         Parameters:
-            k (int): Number of clusters for AgglomerativeClustering: 'ward', 'complete', 'average' or 'single'. Defaults to 'ward'. 
-            linkage (str): Type of linkage to use with AgglomerativeClustering.
+            num_clusters (int): Number of clusters for AgglomerativeClustering.  
+            linkage (str): Type of linkage to use with AgglomerativeClustering: 'ward', 'complete', 'average' or 'single'.
             reduction (str, optional): Dimensionality reduction method ('tsne' or 'pca'). Defaults to 'tsne'.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
             
         Returns:
             array: Cluster labels assigned by KMeans for each data point.
         """
-        aggClusteringModel = sklearn.cluster.AgglomerativeClustering(n_clusters=k, linkage=linkage)
+        aggClusteringModel = sklearn.cluster.AgglomerativeClustering(n_clusters=num_clusters, linkage=linkage)
         labels = aggClusteringModel.fit_predict(self.embeddings)
 
         embeddings_2d = self.reduce_dimensions(reduction)
 
-        self.plot_clusters(embeddings_2d, labels, k, reduction, output)
+        self.plot_clusters(embeddings_2d, labels, num_clusters, reduction, output)
 
         return labels
+    
+    def select_balanced_images(self, n_clusters: int, linkage: str, reduction: float=0.5, selection_type: str = "representative", 
+                               diverse_percentage: float = 0.1, output_directory: str = None) -> ImageDataset:
+        """
+        Selects a subset of images from a dataset based on AgglomerativeClustering.
+        The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
+
+        Args:
+            n_clusters (int): Number of clusters for AgglomerativeClustering.
+            linkage (str): Type of linkage to use with AgglomerativeClustering.
+            reduction (float, optional): Percentage of the total dataset to retain. Defaults to 0.5. A value of 0.5 retains 50% of the dataset. 
+            selection_type (str, optional): Determines whether to select "representative" or "diverse" images. Defaults to "representative".
+            diverse_percentage (float, optional): Percentage of the cluster's images to select as diverse. Defaults to 0.1.
+            output_directory (str, optional): Directory to save the reduced dataset. If None, the folder will not be created.
+
+        Returns:
+            ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
+        """
+        agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
+        labels = agglomerative.fit_predict(self.embeddings)
+
+        reduced_dataset_agglomerative = self._select_balanced_images(labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+                                                              include_outliers=False, output_directory=output_directory)
+
+        return reduced_dataset_agglomerative

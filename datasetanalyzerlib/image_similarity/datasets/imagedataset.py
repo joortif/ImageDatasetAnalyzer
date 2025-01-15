@@ -1,10 +1,11 @@
+from collections import defaultdict
 import os
 from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
 
 class ImageDataset(Dataset):
-    def __init__(self, directory: str, image_files: np.ndarray=None, processor=None):
+    def __init__(self, image_dir: str, image_files: np.ndarray=None, processor=None):
         """
         Args:
             directory (str): Directory containing images.
@@ -12,19 +13,19 @@ class ImageDataset(Dataset):
             image_files (array, optional): Images to save from the directory. If None, all the images from the directory are saved.
         """
 
-        self.directory = directory
+        self.img_dir = image_dir
         self.processor = processor
 
         self.image_files = image_files
         
         if not self.image_files:
-            self.image_files = [f for f in os.listdir(directory) if f.endswith(('jpg', 'png'))]
+            self.image_files = [f for f in os.listdir(image_dir) if f.endswith(('jpg', 'png'))]
 
     def __len__(self):
         return len(self.image_files)
 
     def __getitem__(self, idx):
-        image_path = os.path.join(self.directory, self.image_files[idx])
+        image_path = os.path.join(self.img_dir, self.image_files[idx])
         
         try:
             image = Image.open(image_path).convert("RGB")
@@ -66,7 +67,7 @@ class ImageDataset(Dataset):
         Returns:
             Image: The raw image as a Pillow Image object.
         """
-        image_path = os.path.join(self.directory, self.image_files[idx])
+        image_path = os.path.join(self.img_dir, self.image_files[idx])
 
         try:
             image = Image.open(image_path).convert("RGB")
@@ -74,3 +75,35 @@ class ImageDataset(Dataset):
             raise RuntimeError(f"Error loading image {image_path}: {e}")
 
         return image
+
+
+    def _image_sizes(self, directory, files): 
+        """
+        Returns the sizes of the images in the directory.
+        """
+        images_sizes = defaultdict(int)
+        for fname in files:
+            fpath = os.path.join(directory, fname)
+            with Image.open(fpath) as img:
+                size = img.size
+                images_sizes[size] += 1
+
+        sorted_sizes = sorted(images_sizes.items(), key=lambda item: item[1], reverse=True)
+
+        images_sizes = dict(sorted_sizes)
+        
+        for size, count in images_sizes.items():
+            width, height = size
+            percentage = (count / len(files)) * 100
+            print(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
+    
+    def analyze(self):
+        """
+        Analyzes the image dataset reporting the distribution of image sizes.
+
+        This method calculates the frequency of each unique image size in the dataset
+        and prints the report to the console.
+        """
+        
+        self._image_sizes(self.img_dir, self.image_files)
+        print(f"Total number of images in the dataset: {len(self.image_files)}")

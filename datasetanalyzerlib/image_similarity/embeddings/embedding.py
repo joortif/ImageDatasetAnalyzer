@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
 
-from .imagedataset import ImageDataset
+from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 
 class Embedding:
     def __init__(self, model_name: str, batch_size: int=8):

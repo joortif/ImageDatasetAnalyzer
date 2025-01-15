@@ -1,20 +1,26 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import random
+
+from scipy.spatial.distance import cdist
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 
-from datasetanalyzerlib.image_similarity.imagedataset import ImageDataset
+import shutil
+
+from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 
 class ClusteringBase():
 
-    def __init__(self, embeddings: np.ndarray, random_state: int):
+    def __init__(self, dataset: ImageDataset, embeddings: np.ndarray,random_state: int):
+        self.dataset = dataset
         self.embeddings = embeddings
         self.random_state = random_state
 
-    def evaluate_metric(self, metric: str):
+    def _evaluate_metric(self, metric: str):
         if metric == 'silhouette':
             scoring_function = silhouette_score
         elif metric == 'calinski':
@@ -39,23 +45,23 @@ class ClusteringBase():
         
         return reducer.fit_transform(self.embeddings)
 
-    def plot_clusters(self, embeddings_2d: np.ndarray, labels: np.ndarray, k: int, reduction: str, output: str = None):
+    def plot_clusters(self, embeddings_2d: np.ndarray, labels: np.ndarray, num_clusters: int, reduction: str, output: str = None):
         """
         Plots the clustering result in 2D after dimensionality reduction.
         """
+
         plt.figure(figsize=(12, 8))
         colormap = plt.cm.get_cmap('tab20')
 
         outliers = np.where(labels == -1)[0] 
         if outliers.size > 0:  
-            k -= 1
+            num_clusters -= 1
             plt.scatter(
                 embeddings_2d[outliers, 0], embeddings_2d[outliers, 1],
                 label='Noise', color='black', marker='x', s=50
             )
         
-
-        for i in range(k):
+        for i in range(num_clusters):
             if i != -1:  
                 cluster_indices = np.where(labels == i)
                 plt.scatter(embeddings_2d[cluster_indices, 0], embeddings_2d[cluster_indices, 1], 
@@ -75,7 +81,7 @@ class ClusteringBase():
         else:
             plt.show()
 
-    def show_cluster_images(self, cluster_id: int, labels: np.ndarray, dataset: ImageDataset, images_to_show: int=9, images_per_row: int=3, output: str=None) -> None:
+    def show_cluster_images(self, cluster_id: int, labels: np.ndarray, images_to_show: int=9, images_per_row: int=3, output: str=None) -> None:
         """
         Displays a grid of the first images_to_show number of images that belong to a specific cluster.
 
@@ -107,7 +113,7 @@ class ClusteringBase():
 
         if num_images == 1:  
             image_idx = cluster_indices[0]
-            image = dataset.get_image(image_idx)
+            image = self.dataset.get_image(image_idx)
 
             plt.figure(figsize=(6, 6))
             plt.imshow(image)
@@ -132,7 +138,7 @@ class ClusteringBase():
         for idx, image_idx in enumerate(cluster_indices):  
             plt.subplot(num_rows, images_per_row, idx + 1)
 
-            image = dataset.get_image(image_idx)
+            image = self.dataset.get_image(image_idx)
 
             plt.imshow(image)
             plt.axis('off')
@@ -147,3 +153,138 @@ class ClusteringBase():
             plt.close()
         else:
             plt.show()
+
+
+    def _calculate_medoids(self, embeddings=np.ndarray, labels=np.ndarray):
+        """
+        Calculates medoids for each cluster.
+        """
+        medoids = []
+        for cluster_idx in np.unique(labels):
+            
+            if cluster_idx == -1: 
+                continue
+            
+            cluster_embeddings = embeddings[labels == cluster_idx]
+            
+            if len(cluster_embeddings) == 0: 
+                medoids.append(None)
+                continue
+            
+            distances = cdist(cluster_embeddings, cluster_embeddings, metric="euclidean")
+            medoid_idx = np.argmin(distances.sum(axis=1))
+            medoids.append(cluster_embeddings[medoid_idx])
+        
+        return np.array([m for m in medoids if m is not None])
+    
+    def _select_images(self, cluster_embeddings, cluster_filenames, cluster_centers, cluster_idx,
+                        num_selected_images, num_diverse_images, selection_type):
+        """
+        Selects representative or diverse images from a cluster.
+        """
+
+        if selection_type.lower() == "random":
+            num_selected_images = min(num_selected_images, len(cluster_filenames))
+            return random.sample(cluster_filenames, num_selected_images)
+
+        if cluster_centers is not None and len(cluster_centers) > cluster_idx and cluster_idx != -1:
+            cluster_center = cluster_centers[cluster_idx]
+        else:
+            cluster_center = np.mean(cluster_embeddings, axis=0)  
+
+        distances = np.linalg.norm(cluster_embeddings - cluster_center, axis=1)
+
+        diverse_images = []
+
+        if selection_type.lower() == "representative":
+            closest_indices = distances.argsort()[:num_selected_images - num_diverse_images]
+            selected_images = cluster_filenames[closest_indices]
+        else:
+            farthest_indices = distances.argsort()[-(num_selected_images - num_diverse_images):]
+            selected_images = cluster_filenames[farthest_indices]
+        
+        if num_diverse_images > 0:
+            farthest_indices = distances.argsort()[-num_diverse_images:]
+            diverse_images = cluster_filenames[farthest_indices]
+
+        return np.unique(np.concatenate((selected_images, diverse_images)))
+
+    def _select_balanced_images(self, labels: np.ndarray, cluster_centers: np.ndarray | None, reduction: int, selection_type: str,
+                               diverse_percentage: int, include_outliers: bool, output_directory: str):
+        """
+        Selects a balanced subset of images.
+
+        Args:
+            dataset (ImageDataset): The dataset containing images and metadata.
+            labels (array): Cluster labels for each image, obtained from a clustering algorithm. Outliers are marked as -1.
+            cluster_centers (array): Centroids or medoids of the clusters. If None, they are calculated dinamically. Defaults to None. 
+            
+            selection_type (str): Whether to select "representative" images (closest to the cluster center), "diverse" images (farthest from 
+                                  the cluster center) or "random". Defaults to representative. 
+            include_outliers (bool): Whether to include outliers (label -1) in the selection.
+            output_directory (str, optional): Directory to save reduced dataset. 
+
+        Returns:
+            ImageDataset: Reduced dataset instance.
+        """
+        if selection_type.lower() not in ['representative', 'diverse', 'random']:
+            raise ValueError("Invalid value for selection_type. Must be 'representative', 'diverse' or 'random'.")
+
+        if cluster_centers is None and selection_type.lower() != 'random':
+            self._calculate_medoids(self.embeddings, labels)
+
+        total_images = len(self.dataset)
+        images_embeddings = self.embeddings.copy()
+
+        if not include_outliers:
+            print("Skipping outliers...")
+            
+            valid_indices = labels != -1
+            labels = labels[valid_indices]  
+            images_embeddings = self.embeddings[valid_indices] 
+
+            total_images = len(images_embeddings)
+        
+        num_selected_images_total = int(total_images * reduction)
+        group_sizes = [np.sum(labels == cluster_idx) for cluster_idx in np.unique(labels)]
+
+        if output_directory:
+            os.makedirs(output_directory, exist_ok=True)
+
+        reduced_dataset_files = []
+
+        for cluster_idx in np.unique(labels):
+            
+            cluster_embeddings = images_embeddings[labels == cluster_idx]
+            cluster_filenames = np.array([self.dataset.image_files[i] for i in range(total_images) if labels[i] == cluster_idx])
+
+            proportion = group_sizes[cluster_idx] / total_images
+            num_selected_images = int(proportion * num_selected_images_total)
+            num_diverse_images = int(num_selected_images * diverse_percentage)
+            num_selected_images = min(num_selected_images, len(cluster_filenames))
+
+            selected_images = self._select_images(cluster_embeddings, cluster_filenames, cluster_centers, cluster_idx,
+                                                   num_selected_images, num_diverse_images, selection_type)
+
+            reduced_dataset_files.extend(selected_images)
+
+            if output_directory:
+                for filename in selected_images:
+                    src_path = os.path.join(self.dataset.img_dir, filename)
+                    dst_path = os.path.join(output_directory, filename)
+                    shutil.copy(src_path, dst_path)
+
+            print(f"Cluster {cluster_idx}: {len(selected_images)} images selected from {len(cluster_embeddings)}.")
+            print(f"  - {num_diverse_images} diverse images and {num_selected_images - num_diverse_images} representative images.")
+
+        if output_directory: 
+            print(f"Reduced dataset saved to: {output_directory}")
+        else:
+            output_directory = self.dataset.img_dir
+
+        reduced_dataset = ImageDataset(output_directory, reduced_dataset_files, processor= self.dataset.processor)
+
+        print(f"Dataset reduced to {len(reduced_dataset)} images.")
+
+        return reduced_dataset
+
