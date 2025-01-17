@@ -56,6 +56,10 @@ class OPTICSClustering(ClusteringBase):
         
         scores = [score for _, score in results]
 
+        if all(score == 0 for score in scores):
+            print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+            plot = False
+
         if plot:
             plt.figure(figsize=(10, 7))
             plt.plot(min_samples_range, scores, marker='o', linestyle='--')

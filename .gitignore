@@ -2,4 +2,4 @@
 __pycache__/
 *.pyc
 embeddings.npy
-embeddings_labels.npy
+embeddings*.npy

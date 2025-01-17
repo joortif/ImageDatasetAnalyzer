@@ -24,10 +24,8 @@ class DBSCANClustering(ClusteringBase):
 
         scoring_function = self._evaluate_metric(metric)
         results = []
-        heatmap_data = np.full((len(eps_range), len(min_samples_range)), -1.0)
-
-        for i, eps in enumerate(eps_range):
-            for j, min_samples in enumerate(min_samples_range):
+        for eps in eps_range:
+            for min_samples in min_samples_range:
                 dbscan = DBSCAN(eps=eps, min_samples=min_samples)
                 labels = dbscan.fit_predict(self.embeddings)
                 
@@ -46,13 +44,19 @@ class DBSCANClustering(ClusteringBase):
                 valid_labels = labels[valid_indices]
                 valid_embeddings = self.embeddings[valid_indices]
 
-                if len(np.unique(valid_labels)) > 1:
-                    score = scoring_function(valid_embeddings, valid_labels)
-                    results.append((eps, min_samples, score))
-                    heatmap_data[i, j] = score
+                if len(np.unique(valid_labels)) == 1:
+                    print(f"Warning: Only 1 cluster found for eps={eps}, min_samples={min_samples}. Can't calculate metric {metric.lower()}.")
+                    results.append((eps, min_samples, -1))
+                    continue
+
+                score = scoring_function(valid_embeddings, valid_labels)
+                results.append((eps, min_samples, score))
 
         best_combination = max(results, key=lambda x: x[2]) if metric != 'davies' else min(results, key=lambda x: x[2])
         best_eps, best_min_samples, best_score = best_combination
+
+        if best_score == -1:
+            print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
 
         return best_eps, best_min_samples, best_score
     

@@ -3,6 +3,7 @@ import os
 from torch.utils.data import Dataset
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 
 class ImageDataset(Dataset):
     def __init__(self, image_dir: str, image_files: np.ndarray=None, processor=None):
@@ -26,17 +27,30 @@ class ImageDataset(Dataset):
 
     def __getitem__(self, idx):
         image_path = os.path.join(self.img_dir, self.image_files[idx])
-        
-        try:
-            image = Image.open(image_path).convert("RGB")
-        except Exception as e:
-            raise RuntimeError(f"Error loading image {image_path}: {e}")
+        image = Image.open(image_path)
 
-        processed = self.processor(images=image, return_tensors="pt")
+        if self.processor is None:
+            return np.array(image)
         
-        inputs = processed.get("pixel_values", image).squeeze(0)
+        image = image.convert("RGB")
+        
+        if hasattr(self.processor, 'images'):
+            processed = self.processor(images=image, return_tensors="pt")
+        
+            inputs = processed.get("pixel_values", image).squeeze(0)
 
-        return inputs
+            return inputs
+
+        if hasattr(self.processor, '__call__'):
+            image_np = np.array(image).copy()
+            processed = self.processor(image_np)
+            return processed
+
+        transform = self.processor
+
+        return transform(image)
+
+        
 
     def set_processor(self, processor) -> None:
         """
