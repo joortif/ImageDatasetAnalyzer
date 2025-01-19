@@ -3,8 +3,6 @@ import os
 import torch
 import numpy as np
 
-
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'datasetanalyzerlib')))
 
 from datasetanalyzerlib.image_similarity.embeddings.embedding import Embedding
@@ -13,6 +11,7 @@ from datasetanalyzerlib.image_similarity.models.agglomerativeclustering import A
 from datasetanalyzerlib.image_similarity.models.dbscanclustering import DBSCANClustering
 from datasetanalyzerlib.image_similarity.models.opticsclustering import OPTICSClustering
 from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
+from datasetanalyzerlib.image_similarity.embeddings.huggingfaceembedding import HuggingFaceEmbedding
 from datasetanalyzerlib.image_similarity.datasets.imagelabeldataset import ImageLabelDataset
 from datasetanalyzerlib.image_similarity.embeddings.opencvlbpembedding import OpenCVLBPEmbedding
 from datasetanalyzerlib.image_similarity.embeddings.torchembedding import PyTorchEmbedding
@@ -22,9 +21,9 @@ from datasetanalyzerlib.image_similarity.embeddings.tensorflowembedding import T
 
 if __name__ == "__main__":
     
-    img_dir = r"C:\Users\joortif\Desktop\datasets\forest_orig_reduc\train\images"
-    labels_dir = r"C:\Users\joortif\Desktop\datasets\forest_orig_reduc\train\labels"
-    output_path = r"C:\Users\joortif\Desktop\datasets\freiburg_resultados\tensorflow"
+    img_dir = r"C:\Users\joortif\Desktop\datasets\datasets_preprocesados\Sidewalk_dataset\train\images"
+    labels_dir = r"C:\Users\joortif\Desktop\datasets\datasets_preprocesados\Sidewalk_dataset\train\labels"
+    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\sidewalk_train_resultados\huggingface"
 
     os.makedirs(os.path.join(output_path, "kmeans"), exist_ok=True)
     os.makedirs(os.path.join(output_path, "agglomerative"), exist_ok=True)
@@ -45,12 +44,23 @@ if __name__ == "__main__":
     random_state = 123
 
     dataset = ImageDataset(img_dir)
+    label_dataset = ImageLabelDataset(img_dir=img_dir, label_dir=labels_dir, background=0)
 
+    #print("Full dataset analysis")
+    #label_dataset.analyze()
+
+    #emb = HuggingFaceEmbedding("openai/clip-vit-base-patch16")
+    #emb = PyTorchEmbedding("densenet121")
+    #emb = OpenCVLBPEmbedding(8, 24, resize_height=224, resize_width=224)
     emb = TensorflowEmbedding("MobileNetV2")
+
+    embeddings = emb.generate_embeddings(dataset)
+
+    #emb = TensorflowEmbedding("MobileNetV2")
 
     #embeddings = emb.generate_embeddings(dataset)
     #np.save('embeddings_tf.npy', embeddings)
-    embeddings = np.load('embeddings_tf.npy')
+    #embeddings = np.load('embeddings_tf.npy')
     #print(embeddings.shape)
 
     #emb = OpenCVLBPEmbedding(48, 16)
@@ -63,7 +73,7 @@ if __name__ == "__main__":
     #embeddings = emb.generate_embeddings(dataset)
 
     #np.save('embeddings_labels.npy', embeddings)
-    #embeddings = np.load('embeddings_labels.npy')
+    #embeddings = np.load('embeddings.npy')
     
 
     kmeans = KMeansClustering(dataset, embeddings, random_state)
@@ -126,9 +136,10 @@ if __name__ == "__main__":
     print("=============================================")
     print("DBSCANClustering")
     best_eps, best_min_samples, best_score = dbscan.find_best_DBSCAN(
-        eps_range= np.linspace(0.1, 3, 10),
-        min_samples_range=np.arange(10, 35),
-        metric='calinski'
+        eps_range= np.arange(15, 40, 0.5),
+        min_samples_range=np.arange(2, 20),
+        metric='calinski',
+        output=dbscan_output_path
     )
 
     print(f"Best EPS: {best_eps}, Best Min Samples: {best_min_samples}, Best Score: {best_score}")

@@ -2,6 +2,7 @@ from transformers import AutoModel, AutoProcessor
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
+from PIL import Image
 
 from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 from datasetanalyzerlib.image_similarity.embeddings.embedding import Embedding
@@ -20,6 +21,23 @@ class HuggingFaceEmbedding(Embedding):
         self.model = AutoModel.from_pretrained(model_name)
         self.batch_size = batch_size
 
+        print(f"Loaded {self.model_name} from HuggingFace Hub.")
+
+    def _transform_image(self, batch) -> torch.Tensor:
+        """
+        Transforms a batch of images into the appropriate tensor format for the model.
+
+        Args:
+            batch: A list of images to be processed.
+
+        Returns:
+            torch.Tensor: Processed tensor ready for model input.
+        """
+        images = [image.convert("RGB") for image in batch]
+        processed = self.processor(images=images, return_tensors="pt")
+        inputs = processed.get("pixel_values", images).squeeze(0)
+        return inputs
+
     def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
         """
         Processes all images in the specified dataset in batches.
@@ -31,7 +49,6 @@ class HuggingFaceEmbedding(Embedding):
         Returns:
             torch.Tensor: Embeddings generated for all images in the directory.
         """
-        
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             if device.type == "cuda":
@@ -39,22 +56,18 @@ class HuggingFaceEmbedding(Embedding):
                 print(f"Device not detected. Using GPU: {device_name}")
             else:
                 print("Device not detected. Using CPU.")
-
-        dataset.set_processor(self.processor)
         
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
         
         embeddings = []
-
         self.model.to(device)
         
         for batch in tqdm(dataloader, desc="Generating embeddings..."):
-
             batch = batch.to(device)
-        
+
             with torch.no_grad():
                 if hasattr(self.model, "vision_model"):
-                    outputs = self.model.vision_model(pixel_values=batch).last_hidden_state[:, 0] 
+                    outputs = self.model.vision_model(pixel_values=batch).last_hidden_state[:, 0]
                 else:
                     outputs = self.model(pixel_values=batch).last_hidden_state[:, 0]
 

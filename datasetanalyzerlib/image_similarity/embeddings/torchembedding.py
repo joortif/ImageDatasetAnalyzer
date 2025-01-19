@@ -16,6 +16,20 @@ class PyTorchEmbedding(Embedding):
         self.model = torch.nn.Sequential(*list(self.model.children())[:-1])
 
         self.batch_size = batch_size
+        print(f"Loaded {model_name} from PyTorch.")
+
+    def _transform_image(self, batch) -> torch.Tensor:
+        """
+        Transforms a batch of images into the appropriate tensor format for the model.
+
+        Args:
+            batch: A list of images to be processed.
+
+        Returns:
+            torch.Tensor: Processed tensor ready for model input.
+        """
+        images = [self.processor(image.convert("RGB")) for image in batch]
+        return torch.stack(images)
 
     def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
 
@@ -29,7 +43,7 @@ class PyTorchEmbedding(Embedding):
         
         dataset.set_processor(self.processor)
         
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
         
         embeddings = []
 

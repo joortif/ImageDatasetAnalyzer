@@ -41,11 +41,7 @@ class ImageLabelDataset(ImageDataset):
             raise ValueError(f"The directory contains multiple extensions for labels: {labels_ext}.")
 
     def _compare_directories(self, verbose):
-        """
-        
-        """
-        
-        
+
         if verbose:
             logging.info(f"Comparing directories: {self.img_dir} and {self.label_dir}...")
 
@@ -60,6 +56,13 @@ class ImageLabelDataset(ImageDataset):
 
         if len(labels_name) != len(labels_files):
             logging.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
+
+        if images_name != labels_name:
+            differing_files = images_name.symmetric_difference(labels_name)
+            if verbose:
+                for file in differing_files:
+                    logging.warning(f"Filename mismatch: {file} found in one directory but not the other.")
+            raise ValueError(f"Filename mismatch between {self.img_dir} and {self.label_dir}. Mismatched files: {differing_files}")
         
         if len(images_name) > len(labels_name):
             missing_masks = images_name - labels_name

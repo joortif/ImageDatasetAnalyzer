@@ -1,4 +1,6 @@
 from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+import os
 
 from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
 from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
@@ -7,7 +9,7 @@ import numpy as np
 
 class DBSCANClustering(ClusteringBase):
     
-    def find_best_DBSCAN(self, eps_range: range, min_samples_range: range, metric: str='silhouette') -> tuple:
+    def find_best_DBSCAN(self, eps_range: range, min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None) -> tuple:
         """
         Evaluates DBSCAN clustering using the specified metric, including noise points.
 
@@ -28,6 +30,7 @@ class DBSCANClustering(ClusteringBase):
             for min_samples in min_samples_range:
                 dbscan = DBSCAN(eps=eps, min_samples=min_samples)
                 labels = dbscan.fit_predict(self.embeddings)
+                print(np.unique(labels))
                 
                 if np.all(labels == -1):
                     print(f"Warning: No clusters found for eps={eps}, min_samples={min_samples}. All points are noise.")
@@ -57,8 +60,45 @@ class DBSCANClustering(ClusteringBase):
 
         if best_score == -1:
             print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+            return best_eps, best_min_samples, best_score
 
-        return best_eps, best_min_samples, best_score
+        filtered_min_samples = list(min_samples_range)[:9]
+        num_plots = len(filtered_min_samples)
+
+        if plot:
+            if num_plots > 0:
+                ncols = min(num_plots, 3)
+                nrows = (num_plots + ncols - 1) // ncols
+
+                fig, axes = plt.subplots(nrows, ncols, figsize=(5 * ncols, 5 * nrows), sharey=True)
+                axes = axes.flatten()
+
+                for i, ax in enumerate(axes[:num_plots]):
+                    min_samples = filtered_min_samples[i]
+                    scores_for_min_samples = [(eps, score) for eps, ms, score in results if ms == min_samples]
+
+                    if scores_for_min_samples:
+                        eps_values, scores = zip(*scores_for_min_samples)
+
+                        ax.plot(eps_values, scores, marker='o', label=f'min_samples={min_samples}')
+                        ax.set_title(f'min_samples={min_samples}')
+                        ax.set_xlabel('Eps')
+                        ax.set_ylabel(f'{metric.capitalize()} Score')
+                        ax.grid(True)
+                        ax.legend()
+
+                for j in range(num_plots, len(axes)):
+                    axes[j].axis('off')
+
+                if output:
+                    output = os.path.join(output, f"dbscan_evaluation_{metric.lower()}.png")
+                    plt.savefig(output, format='png')
+                    print(f"Plot saved to {output}")
+                    plt.close()
+                else:
+                    plt.show()
+
+            return best_eps, best_min_samples, best_score
     
     def clustering(self, eps: float = 0.5, min_samples: int = 5, reduction: str = 'tsne', output: str = None) -> np.ndarray:
         """

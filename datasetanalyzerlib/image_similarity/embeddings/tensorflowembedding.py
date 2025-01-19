@@ -18,17 +18,18 @@ class TensorflowEmbedding(Embedding):
     def __init__(self, model_name: str, batch_size: int=8, resize_height: int=224, resize_width: int=224):
 
         self.model_name = model_name
-
         self.height = resize_height
         self.width = resize_width
 
         self.model, self.processor = self._load_model()
-
         self.batch_size = batch_size
-
         self.model.trainable = False  
-
         self.model = tf.keras.Model(inputs=self.model.input, outputs=self.model.layers[-2].output)
+
+        self.mean = np.array([0.485, 0.456, 0.406])  
+        self.std = np.array([0.229, 0.224, 0.225]) 
+
+        print(f"Loaded {self.model_name} from TensorFlow.")
 
     def _load_model(self): 
         try:
@@ -51,17 +52,14 @@ class TensorflowEmbedding(Embedding):
         except AttributeError:
             raise ValueError(f"Model {self.model_name} not supported or not found in tensorflow.keras.applications.")
         
-    def _redim_collate_fn(self, batch):
+    def _transform_image(self, batch) -> torch.Tensor:
         resized_batch = []
-        for item in batch:
-
-            item = np.clip(item * 255, 0, 255).astype(np.uint8)
-                
-            image = Image.fromarray(item)
-
+        for image in batch:
             image = image.resize((self.width, self.height))
-
             image = np.array(image)
+
+            image = image / 255.0  
+            image = (image - self.mean) / self.std
 
             resized_batch.append(image)
         
@@ -82,7 +80,7 @@ class TensorflowEmbedding(Embedding):
         
         dataset.set_processor(self.processor)
 
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=self._redim_collate_fn)
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
 
         embeddings = []
 

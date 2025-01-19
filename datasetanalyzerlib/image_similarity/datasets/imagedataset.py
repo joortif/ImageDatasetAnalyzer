@@ -1,8 +1,12 @@
 from collections import defaultdict
 import os
+
 from torch.utils.data import Dataset
+import torch
+
 import numpy as np
 from PIL import Image
+
 import tensorflow as tf
 
 class ImageDataset(Dataset):
@@ -29,23 +33,28 @@ class ImageDataset(Dataset):
         image_path = os.path.join(self.img_dir, self.image_files[idx])
         image = Image.open(image_path)
 
+        return image
+
         if self.processor is None:
             return np.array(image)
         
         image = image.convert("RGB")
-        
-        if hasattr(self.processor, 'images'):
-            processed = self.processor(images=image, return_tensors="pt")
-        
-            inputs = processed.get("pixel_values", image).squeeze(0)
-
-            return inputs
 
         if hasattr(self.processor, '__call__'):
-            image_np = np.array(image).copy()
-            processed = self.processor(image_np)
-            return processed
+            if isinstance(self.processor, torch.nn.Module):  
+                transform = self.processor
+                return transform(image)
+            try:
+                processed = self.processor(images=image, return_tensors="pt")
+                inputs = processed.get("pixel_values", image).squeeze(0)
 
+                return inputs
+            except Exception as e:
+                print(self.processor.type)
+                image_np = np.array(image).copy()
+                processed = self.processor(image_np)
+                return processed
+            
         transform = self.processor
 
         return transform(image)
