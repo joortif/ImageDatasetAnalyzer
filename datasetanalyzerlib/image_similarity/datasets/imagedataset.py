@@ -2,24 +2,20 @@ from collections import defaultdict
 import os
 
 from torch.utils.data import Dataset
-import torch
 
 import numpy as np
 from PIL import Image
 
-import tensorflow as tf
 
 class ImageDataset(Dataset):
-    def __init__(self, image_dir: str, image_files: np.ndarray=None, processor=None):
+    def __init__(self, image_dir: str, image_files: np.ndarray=None):
         """
         Args:
             directory (str): Directory containing images.
-            processor(optional) : Pretrained processor for image preprocessing.
             image_files (array, optional): Images to save from the directory. If None, all the images from the directory are saved.
         """
 
         self.img_dir = image_dir
-        self.processor = processor
 
         self.image_files = image_files
         
@@ -34,51 +30,6 @@ class ImageDataset(Dataset):
         image = Image.open(image_path)
 
         return image
-
-        if self.processor is None:
-            return np.array(image)
-        
-        image = image.convert("RGB")
-
-        if hasattr(self.processor, '__call__'):
-            if isinstance(self.processor, torch.nn.Module):  
-                transform = self.processor
-                return transform(image)
-            try:
-                processed = self.processor(images=image, return_tensors="pt")
-                inputs = processed.get("pixel_values", image).squeeze(0)
-
-                return inputs
-            except Exception as e:
-                print(self.processor.type)
-                image_np = np.array(image).copy()
-                processed = self.processor(image_np)
-                return processed
-            
-        transform = self.processor
-
-        return transform(image)
-
-        
-
-    def set_processor(self, processor) -> None:
-        """
-        Assigns a processor to the dataset.
-
-        This method sets the processor responsible for handling the images 
-        within the dataset. It allows for preprocessing or transformations 
-        to be applied uniformly.
-
-        Args:
-            processor: Processor for images of the dataset.
-
-        Returns:
-            None: This method does not return a value.
-
-        """
-
-        self.processor = processor
-
 
     def get_image(self, idx):
         """

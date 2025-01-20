@@ -20,10 +20,19 @@ from datasetanalyzerlib.image_similarity.embeddings.tensorflowembedding import T
 
 
 if __name__ == "__main__":
+
+    def get_num_clusters(labels):
+
+        valid_labels = labels[labels != -1]
+        
+        num_clusters = len(np.unique(valid_labels))
+        
+        return num_clusters
     
-    img_dir = r"C:\Users\joortif\Desktop\datasets\datasets_preprocesados\Sidewalk_dataset\train\images"
-    labels_dir = r"C:\Users\joortif\Desktop\datasets\datasets_preprocesados\Sidewalk_dataset\train\labels"
-    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\sidewalk_train_resultados\huggingface"
+    img_dir = r"C:\Users\joortif\Desktop\datasets\Completos\melanoma\train\images"
+    labels_dir = r"C:\Users\joortif\Desktop\datasets\Completos\melanoma\train\labels"
+    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\melanoma\tensorflow"
+    analysis_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\melanoma\analysis"
 
     os.makedirs(os.path.join(output_path, "kmeans"), exist_ok=True)
     os.makedirs(os.path.join(output_path, "agglomerative"), exist_ok=True)
@@ -37,9 +46,37 @@ if __name__ == "__main__":
 
     os.makedirs(os.path.join(kmeans_output_path, "elbow"), exist_ok=True)
     os.makedirs(os.path.join(kmeans_output_path, "calinski"), exist_ok=True)
+    os.makedirs(os.path.join(kmeans_output_path, "silhouette"), exist_ok=True)
+    os.makedirs(os.path.join(kmeans_output_path, "davies"), exist_ok=True)
 
     kmeans_elbow_path = os.path.join(kmeans_output_path, "elbow")
-    kmeans_silhouette_path = os.path.join(kmeans_output_path, "calinski")
+    kmeans_silhouette_path = os.path.join(kmeans_output_path, "silhouette")
+    kmeans_calinski_path = os.path.join(kmeans_output_path, "calinski")
+    kmeans_davies_path = os.path.join(kmeans_output_path, "davies")
+
+    os.makedirs(os.path.join(agglomerative_output_path, "calinski"), exist_ok=True)
+    os.makedirs(os.path.join(agglomerative_output_path, "silhouette"), exist_ok=True)
+    os.makedirs(os.path.join(agglomerative_output_path, "davies"), exist_ok=True)
+
+    agg_silhouette_path = os.path.join(agglomerative_output_path, "silhouette")
+    agg_calinski_path = os.path.join(agglomerative_output_path, "calinski")
+    agg_davies_path = os.path.join(agglomerative_output_path, "davies")
+
+    os.makedirs(os.path.join(dbscan_output_path, "calinski"), exist_ok=True)
+    os.makedirs(os.path.join(dbscan_output_path, "silhouette"), exist_ok=True)
+    os.makedirs(os.path.join(dbscan_output_path, "davies"), exist_ok=True)
+
+    dbscan_silhouette_path = os.path.join(dbscan_output_path, "silhouette")
+    dbscan_calinski_path = os.path.join(dbscan_output_path, "calinski")
+    dbscan_davies_path = os.path.join(dbscan_output_path, "davies")
+
+    os.makedirs(os.path.join(optics_output_path, "calinski"), exist_ok=True)
+    os.makedirs(os.path.join(optics_output_path, "silhouette"), exist_ok=True)
+    os.makedirs(os.path.join(optics_output_path, "davies"), exist_ok=True)
+
+    optics_silhouette_path = os.path.join(optics_output_path, "silhouette")
+    optics_calinski_path = os.path.join(optics_output_path, "calinski")
+    optics_davies_path = os.path.join(optics_output_path, "davies")
 
     random_state = 123
 
@@ -47,14 +84,17 @@ if __name__ == "__main__":
     label_dataset = ImageLabelDataset(img_dir=img_dir, label_dir=labels_dir, background=0)
 
     #print("Full dataset analysis")
-    #label_dataset.analyze()
+    #label_dataset.analyze(output=analysis_path, verbose=True)
 
     #emb = HuggingFaceEmbedding("openai/clip-vit-base-patch16")
-    #emb = PyTorchEmbedding("densenet121")
-    #emb = OpenCVLBPEmbedding(8, 24, resize_height=224, resize_width=224)
+    
+    #emb = PyTorchEmbedding("ResNet50")
+    #emb = OpenCVLBPEmbedding(radius=8, num_points=24)
     emb = TensorflowEmbedding("MobileNetV2")
 
     embeddings = emb.generate_embeddings(dataset)
+    np.save('embeddings\\embeddings_melanoma_mobilenetv2.npy', embeddings)
+    #embeddings = np.load('embeddings\\embeddings_melanoma_mobilenetv2.npy')
 
     #emb = TensorflowEmbedding("MobileNetV2")
 
@@ -82,11 +122,13 @@ if __name__ == "__main__":
     optics = OPTICSClustering(dataset, embeddings, None)
 
     best_k_elbow = kmeans.find_elbow(25, output=kmeans_elbow_path)
-    best_k_silhouette, score = kmeans.find_best_n_clusters(range(2,25), 'calinski', output=kmeans_silhouette_path)
+    best_k_silhouette, best_score_kmeans_silhouette = kmeans.find_best_n_clusters(range(2,25), 'silhouette', output=kmeans_silhouette_path)
+    best_k_calinski, best_score_kmeans_calinski = kmeans.find_best_n_clusters(range(2,25), 'calinski', output=kmeans_calinski_path)
+    best_k_davies, best_score_kmeans_davies = kmeans.find_best_n_clusters(range(2,25), 'davies', output=kmeans_davies_path)
+
     print("=============================================")
-    print("KMeansClustering")
-    print(f'Best K (elbow): {best_k_elbow}')
-    print(f'Best K (calinski score): {best_k_silhouette}, Score: {score}')
+    
+
     labels_kmeans = kmeans.clustering(best_k_elbow, reduction='pca', output=kmeans_elbow_path)
     kmeans.clustering(best_k_elbow, reduction='tsne', output=kmeans_elbow_path)
 
@@ -98,63 +140,166 @@ if __name__ == "__main__":
 
     for cluster in np.unique(labels_kmeans):
         kmeans.show_cluster_images(cluster, labels_kmeans, output=kmeans_silhouette_path)
-    
-    #reduced_dataset_kmeans = kmeans.select_balanced_images(4, 0.7, diverse_percentage=0.5)
-    #reduced_dataset_agg = agglomerative.select_balanced_images(2, 'ward', 0.7, diverse_percentage=0.5)
-    
-    #dbscan.clustering(6.551724137931035, 18, reduction='tsne', output=dbscan_output_path)
-    #optics.clustering(12, output=optics_output_path)
-    
-    #reduced_dataset_dbscan = dbscan.select_balanced_images(6.551724137931035, 18, 0.7, diverse_percentage=0.5)
-    #reduced_dataset_optics = optics.select_balanced_images(12, 0.7, diverse_percentage=0.5)
+
+    labels_kmeans = kmeans.clustering(best_k_calinski, reduction='pca', output=kmeans_calinski_path)
+    kmeans.clustering(best_k_calinski, reduction='tsne', output=kmeans_calinski_path)
+
+    for cluster in np.unique(labels_kmeans):
+        kmeans.show_cluster_images(cluster, labels_kmeans, output=kmeans_calinski_path)
+
+    labels_kmeans = kmeans.clustering(best_k_davies, reduction='pca', output=kmeans_davies_path)
+    kmeans.clustering(best_k_davies, reduction='tsne', output=kmeans_davies_path)
+
+    for cluster in np.unique(labels_kmeans):
+        kmeans.show_cluster_images(cluster, labels_kmeans, output=kmeans_davies_path)
 
     print("=============================================")
     
-    best_k, best_linkage, best_score = agglomerative.find_best_agglomerative_clustering(
+    best_n_samples_silhouette, best_linkage_silhouette, best_score_agg_silhouette = agglomerative.find_best_agglomerative_clustering(
         n_clusters_range=range(2, 15), 
-        metric='calinski', 
-        output=agglomerative_output_path
+        metric='silhouette', 
+        output=agg_silhouette_path
     )
 
-    print("AgglomerativeClustering")
-    print(f"Best K: {best_k}, Best Linkage: {best_linkage}, Best Score: {best_score}")
+    best_n_samples_calinski, best_linkage_calinski, best_score_agg_calinski = agglomerative.find_best_agglomerative_clustering(
+        n_clusters_range=range(2, 15), 
+        metric='calinski', 
+        output=agg_calinski_path
+    )
+
+    best_n_samples_davies, best_linkage_davies, best_score_agg_davies = agglomerative.find_best_agglomerative_clustering(
+        n_clusters_range=range(2, 15), 
+        metric='davies', 
+        output=agg_davies_path
+    )
 
     labels_agg = agglomerative.clustering(
-        num_clusters=best_k, 
-        linkage=best_linkage, 
+        num_clusters=best_n_samples_silhouette, 
+        linkage=best_linkage_silhouette, 
         reduction='pca', 
-        output=agglomerative_output_path
+        output=agg_silhouette_path
     )
 
     agglomerative.clustering(
-        num_clusters=best_k, 
-        linkage=best_linkage, 
+        num_clusters=best_n_samples_silhouette, 
+        linkage=best_linkage_silhouette, 
         reduction='tsne', 
-        output=agglomerative_output_path
+        output=agg_silhouette_path
+    )
+
+    labels_agg = agglomerative.clustering(
+        num_clusters=best_n_samples_calinski, 
+        linkage=best_linkage_calinski, 
+        reduction='pca', 
+        output=agg_calinski_path
+    )
+
+    agglomerative.clustering(
+        num_clusters=best_n_samples_calinski, 
+        linkage=best_linkage_calinski, 
+        reduction='tsne', 
+        output=agg_calinski_path
+    )
+
+    labels_agg = agglomerative.clustering(
+        num_clusters=best_n_samples_davies, 
+        linkage=best_linkage_davies, 
+        reduction='pca', 
+        output=agg_davies_path
+    )
+
+    agglomerative.clustering(
+        num_clusters=best_n_samples_davies, 
+        linkage=best_linkage_davies, 
+        reduction='tsne', 
+        output=agg_davies_path
     )
 
     print("=============================================")
-    print("DBSCANClustering")
-    best_eps, best_min_samples, best_score = dbscan.find_best_DBSCAN(
-        eps_range= np.arange(15, 40, 0.5),
+    best_eps_silhouette, best_min_samples_silhouette, best_score_dbscan_silhouette = dbscan.find_best_DBSCAN(
+        eps_range= np.arange(0.1, 15, 0.5),
+        min_samples_range=np.arange(2, 20),
+        metric='silhouette',
+        output=dbscan_silhouette_path
+    )
+
+    best_eps_calinski, best_min_samples_calinski, best_score_dbscan_calinski = dbscan.find_best_DBSCAN(
+        eps_range= np.arange(0.1, 15, 0.5),
         min_samples_range=np.arange(2, 20),
         metric='calinski',
-        output=dbscan_output_path
+        output=dbscan_calinski_path
     )
 
-    print(f"Best EPS: {best_eps}, Best Min Samples: {best_min_samples}, Best Score: {best_score}")
-    labels_dbscan = dbscan.clustering(best_eps, best_min_samples, reduction='pca', output=dbscan_output_path)
-    dbscan.clustering(best_eps, best_min_samples, reduction='tsne', output=dbscan_output_path)
+    best_eps_davies, best_min_samples_davies, best_score_dbscan_davies = dbscan.find_best_DBSCAN(
+        eps_range= np.arange(0.1, 15, 0.5),
+        min_samples_range=np.arange(2, 20),
+        metric='davies',
+        output=dbscan_davies_path
+    )
 
-    print("OPTICSClustering")
-    best_min_samples, best_score = optics.find_best_OPTICS(
-        min_samples_range=np.arange(10, 35),
+    labels_dbscan_silhouette = dbscan.clustering(best_eps_silhouette, best_min_samples_silhouette, reduction='pca', output=dbscan_silhouette_path)
+    dbscan.clustering(best_eps_silhouette, best_min_samples_silhouette, reduction='tsne', output=dbscan_silhouette_path)
+
+    labels_dbscan_calinski = dbscan.clustering(best_eps_calinski, best_min_samples_calinski, reduction='pca', output=dbscan_calinski_path)
+    dbscan.clustering(best_eps_calinski, best_min_samples_calinski, reduction='tsne', output=dbscan_calinski_path)
+
+    labels_dbscan_davies = dbscan.clustering(best_eps_davies, best_min_samples_davies, reduction='pca', output=dbscan_davies_path)
+    dbscan.clustering(best_eps_davies, best_min_samples_davies, reduction='tsne', output=dbscan_davies_path)
+
+    print("=============================================")
+
+    
+    best_min_samples_optics_silhouette, best_score_optics_silhouette = optics.find_best_OPTICS(
+        min_samples_range=np.arange(2, 25),
+        metric='silhouette',
+        plot=True,
+        output=optics_silhouette_path
+    )
+
+    best_min_samples_optics_calinski, best_score_optics_calinski = optics.find_best_OPTICS(
+        min_samples_range=np.arange(2, 25),
         metric='calinski',
         plot=True,
-        output=optics_output_path
+        output=optics_calinski_path
     )
 
-    print(f"Best Min Samples: {best_min_samples}, Best Score: {best_score}")
-    labels_dbscan = optics.clustering(best_min_samples, reduction='pca', output=optics_output_path)
-    optics.clustering(best_min_samples, reduction='tsne', output=optics_output_path)
+    best_min_samples_optics_davies, best_score_optics_davies = optics.find_best_OPTICS(
+        min_samples_range=np.arange(2, 25),
+        metric='davies',
+        plot=True,
+        output=optics_davies_path
+    )
+
+
+    labels_optics_silhouette = optics.clustering(best_min_samples_optics_silhouette, reduction='pca', output=optics_silhouette_path)
+    optics.clustering(best_min_samples_optics_silhouette, reduction='tsne', output=optics_silhouette_path)
+
+    labels_optics_calinski = optics.clustering(best_min_samples_optics_calinski, reduction='pca', output=optics_calinski_path)
+    optics.clustering(best_min_samples_optics_calinski, reduction='tsne', output=optics_calinski_path)
+
+    labels_optics_davies = optics.clustering(best_min_samples_optics_davies, reduction='pca', output=optics_davies_path)
+    optics.clustering(best_min_samples_optics_davies, reduction='tsne', output=optics_davies_path)
+
+    print("Printing results: ")
+
+    print("KMeansClustering")
+    print(f'Best K (elbow): {best_k_elbow}')
+    print(f'Best K (silhouette score): {best_k_silhouette}, Score: {best_score_kmeans_silhouette}')
+    print(f'Best K (calinski score): {best_k_calinski}, Score: {best_score_kmeans_calinski}')
+    print(f'Best K (davies score): {best_k_davies}, Score: {best_score_kmeans_davies}')
+
+    print("AgglomerativeClustering")
+    print(f"Best K: {best_n_samples_silhouette}, Best Linkage: {best_linkage_silhouette}, Best Score (silhouette): {best_score_agg_silhouette}")
+    print(f"Best K: {best_n_samples_calinski}, Best Linkage: {best_linkage_calinski}, Best Score (calinski): {best_score_agg_calinski}")
+    print(f"Best K: {best_n_samples_davies}, Best Linkage: {best_linkage_davies}, Best Score (davies): {best_score_agg_davies}")
+
+    print("DBSCANClustering")
+    print(f"Best EPS: {best_eps_silhouette}, Best Min Samples: {best_min_samples_silhouette}, Best Score (silhouette): {best_score_dbscan_silhouette}, Num clusters (except outliers): {get_num_clusters(labels_dbscan_silhouette)}")
+    print(f"Best EPS: {best_eps_calinski}, Best Min Samples: {best_min_samples_calinski}, Best Score (calinski): {best_score_dbscan_calinski}, Num clusters (except outliers): {get_num_clusters(labels_dbscan_calinski)}")
+    print(f"Best EPS: {best_eps_davies}, Best Min Samples: {best_min_samples_davies}, Best Score (davies): {best_score_dbscan_davies}, Num clusters (except outliers): {get_num_clusters(labels_dbscan_davies)}")
+
+    print("OPTICSClustering")
+    print(f"Best Min Samples: {best_min_samples_optics_silhouette}, Best Score (silhouette): {best_score_optics_silhouette}, Num clusters (except outliers): {get_num_clusters(labels_optics_silhouette)}")
+    print(f"Best Min Samples: {best_min_samples_optics_calinski}, Best Score (calinski): {best_score_optics_calinski}, Num clusters (except outliers): {get_num_clusters(labels_optics_calinski)}")
+    print(f"Best Min Samples: {best_min_samples_optics_davies}, Best Score (davies): {best_score_optics_davies}, Num clusters (except outliers): {get_num_clusters(labels_optics_davies)}")
 

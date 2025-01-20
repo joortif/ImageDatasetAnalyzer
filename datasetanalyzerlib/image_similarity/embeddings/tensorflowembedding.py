@@ -2,8 +2,6 @@ import tensorflow as tf
 
 from torch.utils.data import DataLoader
 
-from PIL import Image
-
 from tqdm import tqdm
 
 import torch
@@ -32,6 +30,17 @@ class TensorflowEmbedding(Embedding):
         print(f"Loaded {self.model_name} from TensorFlow.")
 
     def _load_model(self): 
+        """
+        Loads the TensorFlow model and its associated preprocessing function.
+
+        Returns:
+            tuple:
+                - tf.keras.Model: A pre-trained TensorFlow model configured for feature extraction.
+                - function: A preprocessing function for input images.
+
+        Raises:
+            ValueError: If the specified model name is not supported or not found in `tensorflow.keras.applications`.
+        """
         try:
             model_name_lower = self.model_name.lower()
 
@@ -53,6 +62,16 @@ class TensorflowEmbedding(Embedding):
             raise ValueError(f"Model {self.model_name} not supported or not found in tensorflow.keras.applications.")
         
     def _transform_image(self, batch) -> torch.Tensor:
+        """
+        Resizes and normalizes a batch of images for input into the TensorFlow model.
+
+        Args:
+            batch (list): A list of PIL.Image objects to process.
+
+        Returns:
+            torch.Tensor: A tensor containing the preprocessed batch of images.
+                        Each image is resized, normalized, and converted to a float tensor.
+        """
         resized_batch = []
         for image in batch:
             image = image.resize((self.width, self.height))
@@ -66,6 +85,19 @@ class TensorflowEmbedding(Embedding):
         return torch.stack([torch.tensor(b, dtype=torch.float32) for b in resized_batch])
         
     def generate_embeddings(self, dataset: ImageDataset, device: str=None):        
+        """
+        Generates embeddings for all images in the specified dataset using a TensorFlow model.
+
+        Args:
+            dataset (ImageDataset): Dataset of images to process. The dataset is expected to be compatible
+                                    with PyTorch DataLoader and should support setting a processor.
+            device (str, optional): Device to use for computation. If "GPU" is specified and a GPU is available, 
+                                    it will be used. Defaults to CPU if not specified or if GPU is unavailable.
+
+        Returns:
+            np.ndarray: A NumPy array containing the embeddings for all images in the dataset.
+        """
+        
         if device is None:
             if tf.config.list_physical_devices('GPU'):
                 print("Device detected. Using GPU.")
@@ -78,8 +110,6 @@ class TensorflowEmbedding(Embedding):
             print("Device not detected or specified. Using CPU.")  
         
         
-        dataset.set_processor(self.processor)
-
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
 
         embeddings = []

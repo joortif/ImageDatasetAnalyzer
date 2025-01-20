@@ -2,7 +2,6 @@ from transformers import AutoModel, AutoProcessor
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
-from PIL import Image
 
 from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
 from datasetanalyzerlib.image_similarity.embeddings.embedding import Embedding
@@ -10,12 +9,6 @@ from datasetanalyzerlib.image_similarity.embeddings.embedding import Embedding
 
 class HuggingFaceEmbedding(Embedding):
     def __init__(self, model_name: str, batch_size: int=8):
-        """
-        Creates embedding class with a pretrained model from Hugging Face.
-
-        Args: 
-            model (str): Pretrained model's name or route.
-        """
         self.model_name = model_name
         self.processor = AutoProcessor.from_pretrained(model_name, use_fast=True)
         self.model = AutoModel.from_pretrained(model_name)
@@ -40,14 +33,14 @@ class HuggingFaceEmbedding(Embedding):
 
     def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
         """
-        Processes all images in the specified dataset in batches.
+        Generates embeddings for all images in the specified dataset using a HuggingFace model.
 
         Args: 
-            dataset (ImageDataset): Dataset of images
+            dataset (ImageDataset): Dataset of images to process.
             device (torch.device, optional): Device to use for computation. Defaults to the best available device.
 
         Returns:
-            torch.Tensor: Embeddings generated for all images in the directory.
+            torch.Tensor: Embeddings generated for all images in the dataset.
         """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

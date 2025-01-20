@@ -32,7 +32,17 @@ class PyTorchEmbedding(Embedding):
         return torch.stack(images)
 
     def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
+        """
+        Generates embeddings for all images in the specified dataset using a PyTorch model.
 
+        Args:
+            dataset (ImageDataset): Dataset of images to process. The dataset is expected to be compatible 
+                                    with PyTorch DataLoader and should support setting a processor.
+            device (torch.device, optional): Device to use for computation. Defaults to the best available device.
+
+        Returns:
+            torch.Tensor: A tensor containing the embeddings for all images in the dataset.
+        """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             if device.type == "cuda":
@@ -40,9 +50,7 @@ class PyTorchEmbedding(Embedding):
                 print(f"Device not detected. Using GPU: {device_name}")
             else:
                 print("Device not detected. Using CPU.")
-        
-        dataset.set_processor(self.processor)
-        
+                
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
         
         embeddings = []

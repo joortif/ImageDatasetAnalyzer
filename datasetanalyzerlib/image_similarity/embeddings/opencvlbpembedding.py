@@ -11,7 +11,7 @@ from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDatas
 
 class OpenCVLBPEmbedding(Embedding):
     
-    def __init__(self, radius: int, num_points: int, resize_height: int | None, resize_width: int | None, batch_size: int = 8, method: str="uniform"):
+    def __init__(self, radius: int, num_points: int, resize_height: int | None=None, resize_width: int | None=None, batch_size: int = 8, method: str="uniform"):
         self.radius = radius
         self.num_points = num_points
         self.batch_size = batch_size
@@ -42,7 +42,18 @@ class OpenCVLBPEmbedding(Embedding):
         return gray_images
 
 
-    def generate_embeddings(self, dataset: ImageDataset):
+    def generate_embeddings(self, dataset: ImageDataset) -> np.ndarray:
+        """
+        Generates embeddings for the images in the given dataset using Local Binary Patterns (LBP) 
+        for feature extraction.
+
+        Args:
+            ImageDataset: Dataset of images to generate embeddings for.
+
+        Returns:
+            np.ndarray: NumPy array where each row corresponds to the LBP-based histogram embedding of an image 
+            in the dataset.
+        """
         embeddings = []
 
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))

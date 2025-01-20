@@ -33,13 +33,13 @@ class OPTICSClustering(ClusteringBase):
                 
             if np.all(labels == -1):
                 print(f"Warning: No clusters found for min_samples={min_samples}. All points are noise.")
-                results.append((min_samples, 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
             unique_labels = np.unique(labels)
             if len(unique_labels) == len(self.embeddings):
                 print(f"Warning: Each point is assigned to its own cluster for min_samples={min_samples}.")
-                results.append((min_samples, 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
             valid_indices = labels != -1
@@ -48,7 +48,7 @@ class OPTICSClustering(ClusteringBase):
 
             if len(np.unique(valid_labels)) == 1:
                 print(f"Warning: Only one cluster and noise cluster found for min_samples={min_samples}. Can't compute {metric.lower()} score.")
-                results.append((min_samples, 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
             score = scoring_function(valid_embeddings, valid_labels)
@@ -56,7 +56,7 @@ class OPTICSClustering(ClusteringBase):
         
         scores = [score for _, score in results]
 
-        if all(score == 0 for score in scores):
+        if all(score == 0 for score in scores) or all(score == float('inf') for score in scores):
             print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
             plot = False
 

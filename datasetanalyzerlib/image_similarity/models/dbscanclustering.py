@@ -30,17 +30,16 @@ class DBSCANClustering(ClusteringBase):
             for min_samples in min_samples_range:
                 dbscan = DBSCAN(eps=eps, min_samples=min_samples)
                 labels = dbscan.fit_predict(self.embeddings)
-                print(np.unique(labels))
                 
                 if np.all(labels == -1):
                     print(f"Warning: No clusters found for eps={eps}, min_samples={min_samples}. All points are noise.")
-                    results.append((eps, min_samples, -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
                 unique_labels = np.unique(labels)
                 if len(unique_labels) == len(self.embeddings):
                     print(f"Warning: Each point is assigned to its own cluster for eps={eps}, min_samples={min_samples}.")
-                    results.append((eps, min_samples, -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
                 valid_indices = labels != -1
@@ -49,7 +48,7 @@ class DBSCANClustering(ClusteringBase):
 
                 if len(np.unique(valid_labels)) == 1:
                     print(f"Warning: Only 1 cluster found for eps={eps}, min_samples={min_samples}. Can't calculate metric {metric.lower()}.")
-                    results.append((eps, min_samples, -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
                 score = scoring_function(valid_embeddings, valid_labels)
