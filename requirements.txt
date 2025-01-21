@@ -1,0 +1,16 @@
+kneed==0.8.5
+matplotlib==3.10.0
+numpy==2.2.2
+opencv_contrib_python==4.10.0.84
+opencv_python==4.10.0.84
+opencv_python_headless==4.10.0.84
+Pillow==11.1.0
+scikit_learn==1.6.1
+scipy==1.15.1
+skimage==0.0
+tensorflow==2.18.0
+tensorflow_intel==2.18.0
+torch==1.13.1+cu116
+torchvision==0.14.1+cu116
+tqdm==4.66.6
+transformers==4.47.0.dev0

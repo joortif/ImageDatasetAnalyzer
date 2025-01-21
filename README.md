@@ -15,7 +15,110 @@ It can also be used to apply these clustering methods for [Active Learning](http
 
 ## 🚀 Getting Started
 
+To start using this package, install it using `pip`:
+
+For example for Ubuntu use:
+```bash
+pip3 install ImageDatasetAnalyzer
+```
+
+On Windows, use:
+```bash
+pip install ImageDatasetAnalyzer
+```
+
 ## 👩‍💻 Usage
+This package includes 3 main modules for **Analysis**, **Embedding generation and Clustering** and **Dataset Reduction**.
+
+### 📊 Dataset analysis
+You can analyze the dataset and explore its properties, obtain metrics and visualizations. This module works both for image datasets with labels and for just image datasets.
+
+```python
+from imagedatasetanalyzer.src.datasets.imagelabeldataset import ImageLabelDataset
+
+# Define paths to the images and labels
+img_dir = r"images/path"
+labels_dir = r"labels/path"
+
+# Load the image and label dataset
+dataset = ImageLabelDataset(img_dir=img_dir, label_dir=labels_dir)
+
+# Alternatively, you can use just an image dataset without labels
+image_dataset = ImageDataset(img_dir=img_dir)
+
+# Perform dataset analysis (visualize and analyze)
+dataset.analyze(plot=True, output="results/path", verbose=True)
+
+# If you use only images (without labels), the analysis will provide less information
+image_dataset.analyze()
+```
+
+### 🔍 Embedding generation and clustering
+This module is used to generate embeddings for your images and then perform clustering using different algorithms (e.g., K-Means, DBSCAN). Here’s how to generate embeddings and perform clustering:
+
+```python
+from imagedatasetanalyzer.src.embeddings.huggingfaceembedding import HuggingFaceEmbedding
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.models.kmeansclustering import KMeansClustering
+import numpy as np
+
+# Define image dataset directory
+img_dir = r"image/path"
+
+# Load the dataset
+dataset = ImageDataset(img_dir)
+
+# Choose an embedding model (e.g., HuggingFace DINO).
+embedding_model = HuggingFaceEmbedding("facebook/dino-vits16")
+embeddings = embedding_model.generate_embeddings(dataset)
+
+# Perform K-Means clustering
+kmeans = KMeansClustering(dataset, embeddings, random_state=123)
+best_k = kmeans.find_elbow(25)  # Find the optimal number of clusters using the elbow method
+
+# Apply K-Means clustering with the best number of clusters
+labels_kmeans = kmeans.clustering(best_k)
+
+# Display images from each cluster
+for cluster in np.unique(labels_kmeans):
+    kmeans.show_cluster_images(cluster, labels_kmeans)
+
+# Visualize clusters using TSNE instead of PCA
+kmeans.clustering(num_clusters=best_k, reduction='tsne', output='tsne_reduction')
+```
+
+### 📉 Dataset reduction 
+This feature allows reducing a dataset based on various clustering methods. You can use different clustering techniques to select a smaller subset of images from the dataset. It can be done selecting those images that are closer to the centroid of each cluster (```selection_type=representative```), selecting those that are farthest (```selection_type=diverse```) or randomly (```selection_type=random```).
+
+```python
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.embeddings.tensorflowembedding import TensorflowEmbedding
+from imagedatasetanalyzer.src.models.kmeansclustering import KMeansClustering
+
+# Define paths
+img_dir = r"images/path"
+
+# Load dataset
+dataset = ImageDataset(img_dir)
+
+# Choose embedding method. We are using MobileNetV2 from Tensorflow.
+emb = TensorflowEmbedding("MobileNetV2")
+embeddings = emb.generate_embeddings(dataset)
+
+# Initialize KMeans clustering
+kmeans = KMeansClustering(dataset, embeddings, random_state=123)
+
+# Select the number of clusters with KMeans that maximize the silhouette score.
+best_k = kmeans.find_best_n_clusters(range(2,25), 'silhouette', plot=False)
+
+# Reduce dataset using the best KMeans model according to the silhouette score. In this case, we are mantaining the 70% of the original dataset (reduction=0.7),
+# obtaining the closest images from each cluster (selection_type='representative'), and ensuring that 20% of the selected images within each cluster are diverse (diverse_percentage=0.2).
+# The reduced dataset will be saved to the specified output directory ("reduced/dataset/path")
+reduced_dataset = kmeans.select_balanced_images(n_clusters=best_k, reduction=0.7, selection_type='representative', diverse_percentage=0.2, output="reduced/dataset/path")
+
+# Analyze reduced dataset
+reduced_dataset.analyze(plot=True, output="path/to/kmeans/output")
+```
 
 ## 🧰 Requirements
 
