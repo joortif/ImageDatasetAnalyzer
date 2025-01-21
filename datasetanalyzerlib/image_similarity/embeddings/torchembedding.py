@@ -58,10 +58,14 @@ class PyTorchEmbedding(Embedding):
         self.model.to(device)
         
         for batch in tqdm(dataloader, desc="Generating embeddings..."):
+
             batch = batch.to(device)
 
             with torch.no_grad():
                 outputs = self.model(batch)
+
+                if len(outputs.shape) == 4:
+                    outputs = outputs.mean(dim=[2, 3])
 
                 embeddings.append(outputs.squeeze().cpu())
             

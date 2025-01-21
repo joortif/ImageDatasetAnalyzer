@@ -29,15 +29,17 @@ if __name__ == "__main__":
         
         return num_clusters
     
-    img_dir = r"C:\Users\joortif\Desktop\datasets\Completos\melanoma\train\images"
-    labels_dir = r"C:\Users\joortif\Desktop\datasets\Completos\melanoma\train\labels"
-    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\melanoma\tensorflow"
-    analysis_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\melanoma\analysis"
+    img_dir = r"C:\Users\joortif\Desktop\datasets\Completos\crack_segmentation_dataset\images"
+    labels_dir = r"C:\Users\joortif\Desktop\datasets\Completos\crack_segmentation_dataset\masks"
+    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\crack\huggingface"
+    analysis_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\crack\analysis"
 
     os.makedirs(os.path.join(output_path, "kmeans"), exist_ok=True)
     os.makedirs(os.path.join(output_path, "agglomerative"), exist_ok=True)
     os.makedirs(os.path.join(output_path, "dbscan"), exist_ok=True)
     os.makedirs(os.path.join(output_path, "optics"), exist_ok=True)
+    os.makedirs(analysis_path, exist_ok=True)
+
 
     kmeans_output_path = os.path.join(output_path, "kmeans")
     agglomerative_output_path = os.path.join(output_path, "agglomerative")
@@ -84,17 +86,18 @@ if __name__ == "__main__":
     label_dataset = ImageLabelDataset(img_dir=img_dir, label_dir=labels_dir, background=0)
 
     #print("Full dataset analysis")
-    #label_dataset.analyze(output=analysis_path, verbose=True)
+    #label_dataset.analyze(plot=True, output=analysis_path, verbose=True)
 
-    #emb = HuggingFaceEmbedding("openai/clip-vit-base-patch16")
+    emb = HuggingFaceEmbedding("facebook/dino-vits16")
     
-    #emb = PyTorchEmbedding("ResNet50")
-    #emb = OpenCVLBPEmbedding(radius=8, num_points=24)
-    emb = TensorflowEmbedding("MobileNetV2")
+    #emb = PyTorchEmbedding("vgg16")
+    #emb = OpenCVLBPEmbedding(radius=16, num_points=48, resize_height=224, resize_width=224)
+    #emb = TensorflowEmbedding("InceptionV3")
 
     embeddings = emb.generate_embeddings(dataset)
-    np.save('embeddings\\embeddings_melanoma_mobilenetv2.npy', embeddings)
-    #embeddings = np.load('embeddings\\embeddings_melanoma_mobilenetv2.npy')
+    np.save('embeddings\\embeddings_crack_hf_dino.npy', embeddings)
+    #embeddings = np.load('embeddings\\embeddings_pytorch_sidewalk_vgg16.npy')
+    #print(embeddings.shape)
 
     #emb = TensorflowEmbedding("MobileNetV2")
 
@@ -217,22 +220,22 @@ if __name__ == "__main__":
 
     print("=============================================")
     best_eps_silhouette, best_min_samples_silhouette, best_score_dbscan_silhouette = dbscan.find_best_DBSCAN(
-        eps_range= np.arange(0.1, 15, 0.5),
-        min_samples_range=np.arange(2, 20),
+        eps_range= np.arange(0.1, 5, 0.5),
+        min_samples_range=np.arange(2, 15),
         metric='silhouette',
         output=dbscan_silhouette_path
     )
 
     best_eps_calinski, best_min_samples_calinski, best_score_dbscan_calinski = dbscan.find_best_DBSCAN(
-        eps_range= np.arange(0.1, 15, 0.5),
-        min_samples_range=np.arange(2, 20),
+        eps_range= np.arange(0.1, 5, 0.5),
+        min_samples_range=np.arange(2, 15),
         metric='calinski',
         output=dbscan_calinski_path
     )
 
     best_eps_davies, best_min_samples_davies, best_score_dbscan_davies = dbscan.find_best_DBSCAN(
-        eps_range= np.arange(0.1, 15, 0.5),
-        min_samples_range=np.arange(2, 20),
+        eps_range= np.arange(0.1, 5, 0.5),
+        min_samples_range=np.arange(2, 15),
         metric='davies',
         output=dbscan_davies_path
     )
@@ -250,21 +253,21 @@ if __name__ == "__main__":
 
     
     best_min_samples_optics_silhouette, best_score_optics_silhouette = optics.find_best_OPTICS(
-        min_samples_range=np.arange(2, 25),
+        min_samples_range=np.arange(2, 15),
         metric='silhouette',
         plot=True,
         output=optics_silhouette_path
     )
 
     best_min_samples_optics_calinski, best_score_optics_calinski = optics.find_best_OPTICS(
-        min_samples_range=np.arange(2, 25),
+        min_samples_range=np.arange(2, 15),
         metric='calinski',
         plot=True,
         output=optics_calinski_path
     )
 
     best_min_samples_optics_davies, best_score_optics_davies = optics.find_best_OPTICS(
-        min_samples_range=np.arange(2, 25),
+        min_samples_range=np.arange(2, 15),
         metric='davies',
         plot=True,
         output=optics_davies_path

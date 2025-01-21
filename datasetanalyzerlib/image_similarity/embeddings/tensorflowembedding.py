@@ -77,8 +77,9 @@ class TensorflowEmbedding(Embedding):
             image = image.resize((self.width, self.height))
             image = np.array(image)
 
-            image = image / 255.0  
-            image = (image - self.mean) / self.std
+            image = self.processor(image)
+
+            image = image.copy()
 
             resized_batch.append(image)
         
@@ -119,8 +120,16 @@ class TensorflowEmbedding(Embedding):
             batch_tensor = tf.convert_to_tensor(batch, dtype=tf.float32)
             features = self.model(batch_tensor, training=False)
 
-            global_max_pool = tf.reduce_max(features, axis=(1, 2))  
-        
-            embeddings.append(global_max_pool.numpy())
+            if batch_tensor.shape[-1] != 3:  
+                raise ValueError("Images must have 3 channels (RGB) in channels_last format.")
+
+            features = self.model(batch_tensor, training=False)
+            
+            if len(features.shape) == 4: 
+
+                global_max_pool = tf.reduce_max(features, axis=(1, 2)) 
+                embeddings.append(global_max_pool.numpy())
+            else:
+                raise ValueError(f"Expected 4D tensor (batch_size, height, width, channels), but got shape: {features.shape}")
 
         return np.vstack(embeddings)

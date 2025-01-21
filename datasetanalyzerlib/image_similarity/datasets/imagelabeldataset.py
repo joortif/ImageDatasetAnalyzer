@@ -23,6 +23,10 @@ class ImageLabelDataset(ImageDataset):
         self.color_dict = color_dict
         self.background = background
 
+        logging.basicConfig(level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s', 
+                    datefmt='%H:%M:%S') 
+
     def _check_label_extensions(self, verbose):
         """
         Checks the extensions of label files in the label directory to ensure consistency.
