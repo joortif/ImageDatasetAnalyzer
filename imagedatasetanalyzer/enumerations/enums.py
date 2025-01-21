@@ -1,6 +1,6 @@
 from enum import Enum
 
-from datasetanalyzerlib.exceptions.exceptions import ExtensionNotFoundException
+from imagedatasetanalyzer.exceptions.exceptions import ExtensionNotFoundException
 
 class Extensions(Enum):
     JSON = '.json'

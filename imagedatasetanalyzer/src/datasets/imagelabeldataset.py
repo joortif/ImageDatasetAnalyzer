@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 import time
 
-from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
-from datasetanalyzerlib.enumerations.enums import Extensions
-from datasetanalyzerlib.exceptions.exceptions import ExtensionNotFoundException
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.enumerations.enums import Extensions
+from imagedatasetanalyzer.exceptions.exceptions import ExtensionNotFoundException
 
 
 class ImageLabelDataset(ImageDataset):

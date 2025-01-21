@@ -2,8 +2,8 @@ from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 import os
 
-from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
-from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 import numpy as np
 

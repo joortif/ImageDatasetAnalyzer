@@ -4,8 +4,8 @@ import os
 
 import matplotlib.pyplot as plt
 
-from datasetanalyzerlib.image_similarity.models.clusteringbase import ClusteringBase
-from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 
 class OPTICSClustering(ClusteringBase):

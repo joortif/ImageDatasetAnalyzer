@@ -11,7 +11,7 @@ from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bo
 
 import shutil
 
-from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class ClusteringBase():
 

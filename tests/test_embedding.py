@@ -5,17 +5,17 @@ import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'datasetanalyzerlib')))
 
-from datasetanalyzerlib.image_similarity.embeddings.embedding import Embedding
-from datasetanalyzerlib.image_similarity.models.kmeansclustering import KMeansClustering
-from datasetanalyzerlib.image_similarity.models.agglomerativeclustering import AgglomerativeClustering
-from datasetanalyzerlib.image_similarity.models.dbscanclustering import DBSCANClustering
-from datasetanalyzerlib.image_similarity.models.opticsclustering import OPTICSClustering
-from datasetanalyzerlib.image_similarity.datasets.imagedataset import ImageDataset
-from datasetanalyzerlib.image_similarity.embeddings.huggingfaceembedding import HuggingFaceEmbedding
-from datasetanalyzerlib.image_similarity.datasets.imagelabeldataset import ImageLabelDataset
-from datasetanalyzerlib.image_similarity.embeddings.opencvlbpembedding import OpenCVLBPEmbedding
-from datasetanalyzerlib.image_similarity.embeddings.torchembedding import PyTorchEmbedding
-from datasetanalyzerlib.image_similarity.embeddings.tensorflowembedding import TensorflowEmbedding
+from imagedatasetanalyzer.src.embeddings.embedding import Embedding
+from imagedatasetanalyzer.src.models.kmeansclustering import KMeansClustering
+from imagedatasetanalyzer.src.models.agglomerativeclustering import AgglomerativeClustering
+from imagedatasetanalyzer.src.models.dbscanclustering import DBSCANClustering
+from imagedatasetanalyzer.src.models.opticsclustering import OPTICSClustering
+from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.src.embeddings.huggingfaceembedding import HuggingFaceEmbedding
+from imagedatasetanalyzer.src.datasets.imagelabeldataset import ImageLabelDataset
+from imagedatasetanalyzer.src.embeddings.opencvlbpembedding import OpenCVLBPEmbedding
+from imagedatasetanalyzer.src.embeddings.torchembedding import PyTorchEmbedding
+from imagedatasetanalyzer.src.embeddings.tensorflowembedding import TensorflowEmbedding
 
 
 
