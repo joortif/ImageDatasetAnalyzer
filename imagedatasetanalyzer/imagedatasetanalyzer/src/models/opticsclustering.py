@@ -10,7 +10,7 @@ from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class OPTICSClustering(ClusteringBase):
 
-    def find_best_OPTICS(self,min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None):
+    def find_best_OPTICS(self,min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None, verbose: bool=False):
         """
         Evaluates OPTICS clustering using the specified metric, including noise points.
 
@@ -19,6 +19,7 @@ class OPTICSClustering(ClusteringBase):
             metric (str, optional): The evaluation metric to use ('silhouette', 'calinski', 'davies'). Defaults to 'silhouette'.
             plot (bool, optional): Whether to plot the results. Defaults to True.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
+            verbose (bool, optional): Whether to display warnings and status messages in the logs. If True, logs are written using the logger. Defaults to False.
 
         Returns:
             tuple: The best 'min_samples' and the best score.
@@ -32,13 +33,15 @@ class OPTICSClustering(ClusteringBase):
             labels = optics.fit_predict(self.embeddings)
                 
             if np.all(labels == -1):
-                print(f"Warning: No clusters found for min_samples={min_samples}. All points are noise.")
+                if verbose:
+                    self.logger.warning(f"No clusters found for min_samples={min_samples}. All points are noise.")
                 results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
             unique_labels = np.unique(labels)
             if len(unique_labels) == len(self.embeddings):
-                print(f"Warning: Each point is assigned to its own cluster for min_samples={min_samples}.")
+                if verbose:
+                    self.logger.warning(f"Each point is assigned to its own cluster for min_samples={min_samples}.")
                 results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
@@ -47,7 +50,8 @@ class OPTICSClustering(ClusteringBase):
             valid_embeddings = self.embeddings[valid_indices]
 
             if len(np.unique(valid_labels)) == 1:
-                print(f"Warning: Only one cluster and noise cluster found for min_samples={min_samples}. Can't compute {metric.lower()} score.")
+                if verbose:
+                    self.logger.warning(f"Only one cluster and noise cluster found for min_samples={min_samples}. Can't compute {metric.lower()} score.")
                 results.append((min_samples, float('inf') if metric == 'davies' else 0))
                 continue
 
@@ -57,7 +61,8 @@ class OPTICSClustering(ClusteringBase):
         scores = [score for _, score in results]
 
         if all(score == 0 for score in scores) or all(score == float('inf') for score in scores):
-            print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+            if verbose:
+                self.logger.warning(f"No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
             plot = False
 
         if plot:

@@ -23,9 +23,13 @@ class ImageLabelDataset(ImageDataset):
         self.color_dict = color_dict
         self.background = background
 
-        logging.basicConfig(level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s', 
-                    datefmt='%H:%M:%S') 
+        self.logger = logging.getLogger(self.__class__.__name__)
+        if not self.logger.hasHandlers(): 
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
 
     def _check_label_extensions(self, verbose):
         """
@@ -43,7 +47,7 @@ class ImageLabelDataset(ImageDataset):
         """
         
         if verbose:
-            logging.info(f"Checking label extensions from path: {self.label_dir}...")
+            self.logger.info(f"Checking label extensions from path: {self.label_dir}...")
 
         labels_ext = {os.path.splitext(file)[1] for file in os.listdir(self.label_dir)}
 
@@ -74,7 +78,7 @@ class ImageLabelDataset(ImageDataset):
             FileNotFoundError: If masks or images are missing in either directory.
         """
         if verbose:
-            logging.info(f"Comparing directories: {self.img_dir} and {self.label_dir}...")
+            self.logger.info(f"Comparing directories: {self.img_dir} and {self.label_dir}...")
 
         images_files = os.listdir(self.img_dir)
         labels_files = os.listdir(self.label_dir)
@@ -83,16 +87,16 @@ class ImageLabelDataset(ImageDataset):
         labels_name = {os.path.splitext(file)[0] for file in os.listdir(self.label_dir)}
 
         if len(images_name) != len(images_files):
-            logging.warning(f"Warning: There are duplicate filenames in {self.img_dir}.")
+            self.logger.warning(f"Warning: There are duplicate filenames in {self.img_dir}.")
 
         if len(labels_name) != len(labels_files):
-            logging.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
+            self.logger.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
 
         if images_name != labels_name:
             differing_files = images_name.symmetric_difference(labels_name)
             if verbose:
                 for file in differing_files:
-                    logging.warning(f"Filename mismatch: {file} found in one directory but not the other.")
+                    self.logger.warning(f"Filename mismatch: {file} found in one directory but not the other.")
             raise ValueError(f"Filename mismatch between {self.img_dir} and {self.label_dir}. Mismatched files: {differing_files}")
         
         if len(images_name) > len(labels_name):
@@ -100,7 +104,7 @@ class ImageLabelDataset(ImageDataset):
 
             if verbose:
                 for missing_mask in missing_masks:
-                    logging.warning(f"Image {missing_mask} in {self.img_dir} does not have a mask in {self.label_dir}")
+                    self.logger.warning(f"Image {missing_mask} in {self.img_dir} does not have a mask in {self.label_dir}")
             
             if missing_masks:
                 raise FileNotFoundError(f"Missing masks for the following images: {missing_masks}")
@@ -110,7 +114,7 @@ class ImageLabelDataset(ImageDataset):
 
             if verbose:
                 for missing_image in missing_images:
-                    logging.warning(f"Mask {missing_image} in {self.label_dir} does not have an image in {self.img_dir}")
+                    self.logger.warning(f"Mask {missing_image} in {self.label_dir} does not have an image in {self.img_dir}")
             
             if missing_images:
                 raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
@@ -151,7 +155,7 @@ class ImageLabelDataset(ImageDataset):
             set: A set of unique class identifiers found in the labels.
         """
         if verbose:
-            logging.info(f"Checking total number of classes from dataset labels...")
+            self.logger.info(f"Checking total number of classes from dataset labels...")
         
         unique_classes = set()
         color_mask = False
@@ -236,14 +240,41 @@ class ImageLabelDataset(ImageDataset):
         contours_dict = {k: v for k, v in sorted(contours_dict.items())}
 
         if verbose:
-            logging.info("Contours for classes:")
+            self.logger.info("Contours for classes:")
             for class_id, (contours, total_count) in contours_dict.items():
-                logging.info(f"Class {class_id}: {len(contours)} total objects across {total_count}/{len(labels)} images.")
+                self.logger.info(f"Class {class_id}: {len(contours)} total objects across {total_count}/{len(labels)} images.")
 
         return contours_dict
     
+    def _show_boxplot(self, object_areas: dict, output: str=None):
+            num_classes = len(object_areas)
+            cols = min(4, num_classes)  
+            rows = (num_classes + cols - 1) // cols  
 
-    def _compute_metrics(self, contours: dict, plot: bool, output: str):
+            fig, axs = plt.subplots(rows, cols, figsize=(5 * cols, 5 * rows), squeeze=False)
+            axs = axs.flatten()  
+
+            for idx, (class_id, areas) in enumerate(object_areas.items()):
+                axs[idx].boxplot(areas, labels=[f"Class {class_id}"])
+                axs[idx].set_title(f"Class {class_id} Area Distribution")
+                axs[idx].set_ylabel("Area")
+                axs[idx].grid(axis="y")
+
+            for idx in range(len(object_areas), len(axs)):
+                axs[idx].axis("off")
+
+            plt.tight_layout()
+
+            if output:
+                boxplot_path = os.path.join(output, "object_areas_boxplot.png")
+                plt.savefig(boxplot_path, format='png')
+                print(f"Boxplot saved to {boxplot_path}")
+                plt.close()
+            else:
+                plt.show()
+    
+
+    def _compute_metrics(self, contours: dict, plot: bool=True, output: str=None):
         """
         Computes metrics about object sizes, bounding boxes, and ellipses for each class.
 
@@ -255,11 +286,13 @@ class ImageLabelDataset(ImageDataset):
         """
         metrics = {"object": [], "bounding_box": [], "ellipse": []}
         class_ids = []
+        object_areas_by_class = {}
 
         for class_id, (class_contours, num_images) in contours.items():
             avg_class_objects_per_image = len(class_contours) / num_images
 
             areas = [cv2.contourArea(contour) for contour in class_contours]
+            object_areas_by_class[class_id] = areas
 
             ellipses_areas = []
             bounding_boxes_areas = []
@@ -330,6 +363,7 @@ class ImageLabelDataset(ImageDataset):
 
         if len(class_ids) <= 2:
             print("Metrics won't be plotted since the dataset is not multiclass.")
+            plot=False
 
         if plot:
             metrics_titles = {
@@ -353,6 +387,8 @@ class ImageLabelDataset(ImageDataset):
                     "Min Ellipse Area"
                 ]
             }
+
+            self._show_boxplot(object_areas_by_class, output)
             
             for metric_type, values in metrics.items():
                 titles = metrics_titles[metric_type]
@@ -431,7 +467,7 @@ class ImageLabelDataset(ImageDataset):
                 self.color_dict = {v: k for k, v in enumerate(classes_set)}
                 
                 if verbose:
-                    logging.warning(f"Color dictionary for labels is missing, it has been automatically created: {self.color_dict}")
+                    self.logger.warning(f"Color dictionary for labels is missing, it has been automatically created: {self.color_dict}")
 
             labels_arr = self._rgb_mask_to_multilabel(labels_arr)
         
@@ -440,4 +476,4 @@ class ImageLabelDataset(ImageDataset):
 
         if verbose: 
             exection_time = time.time() - start_time
-            logging.info(f"Total analysis time: {exection_time: .4f} seconds")
+            self.logger.info(f"Total analysis time: {exection_time: .4f} seconds")

@@ -31,7 +31,7 @@ if __name__ == "__main__":
     
     img_dir = r"C:\Users\joortif\Desktop\datasets\Completos\crack_segmentation_dataset\images"
     labels_dir = r"C:\Users\joortif\Desktop\datasets\Completos\crack_segmentation_dataset\masks"
-    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\crack\huggingface"
+    output_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\crack\tensorflow"
     analysis_path = r"C:\Users\joortif\Desktop\Resultados_ImageDatasetAnalyzer\crack\analysis"
 
     os.makedirs(os.path.join(output_path, "kmeans"), exist_ok=True)
@@ -88,15 +88,15 @@ if __name__ == "__main__":
     #print("Full dataset analysis")
     #label_dataset.analyze(plot=True, output=analysis_path, verbose=True)
 
-    emb = HuggingFaceEmbedding("facebook/dino-vits16")
+    #emb = HuggingFaceEmbedding("facebook/dino-vits16")
     
-    #emb = PyTorchEmbedding("vgg16")
+    #emb = PyTorchEmbedding("resnet101")
     #emb = OpenCVLBPEmbedding(radius=16, num_points=48, resize_height=224, resize_width=224)
-    #emb = TensorflowEmbedding("InceptionV3")
+    emb = TensorflowEmbedding("MobileNetV2")
 
     embeddings = emb.generate_embeddings(dataset)
-    np.save('embeddings\\embeddings_crack_hf_dino.npy', embeddings)
-    #embeddings = np.load('embeddings\\embeddings_pytorch_sidewalk_vgg16.npy')
+    np.save('embeddings\\embeddings_tf_crack_mobilenetv2.npy', embeddings)
+    #embeddings = np.load('embeddings\\embeddings_crack_hf_dino.npy')
     #print(embeddings.shape)
 
     #emb = TensorflowEmbedding("MobileNetV2")

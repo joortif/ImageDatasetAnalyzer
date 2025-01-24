@@ -27,8 +27,18 @@ On Windows, use:
 pip install ImageDatasetAnalyzer
 ```
 
+## 🤖 Supported models
+
+The compatibility of the following models have been tested. You can use other models and versions of these frameworks as well, although their performance and compatibility might not be fully guaranteed.
+
+| Framework     | Model names     |   
+|--------------------------|---------------------|
+| Hugging Face             | ``CLIP`` , ``ViT``, ``DeiT``,   ``Swin Transformer``,  ``DINO ViT``, ``ConvNeXt``   | 
+| PyTorch                  | ``ResNet (50, 101)``, ``VGG (16,19)``, ``DenseNet (121, 169, 201)``, ``InceptionV3``       | 
+| Tensorflow               | ``MobileNet (V2)``, ``InceptionV3``, ``VGG (16, 19)``, ``ResNet (50, 101, 152)``,  ``ResNetV2 (50, 101, 152)``, ``NASNet (Large, Mobile)``, ``ConvNeXt (Tiny, Small, Base, Large, XLarge)``, ``DenseNet (121, 169, 201)`` | 
+
 ## 👩‍💻 Usage
-This package includes 3 main modules for **Analysis**, **Embedding generation and Clustering** and **Dataset Reduction**.
+This package includes 3 main modules for **Analysis**, **Embedding generation and clustering** and **Dataset Reduction**.
 
 ### 📊 Dataset analysis
 You can analyze the dataset and explore its properties, obtain metrics and visualizations. This module works both for image datasets with labels and for just image datasets.
@@ -111,16 +121,34 @@ kmeans = KMeansClustering(dataset, embeddings, random_state=123)
 # Select the number of clusters with KMeans that maximize the silhouette score.
 best_k = kmeans.find_best_n_clusters(range(2,25), 'silhouette', plot=False)
 
-# Reduce dataset using the best KMeans model according to the silhouette score. In this case, we are mantaining the 70% of the original dataset (reduction=0.7),
-# obtaining the closest images from each cluster (selection_type='representative'), and ensuring that 20% of the selected images within each cluster are diverse (diverse_percentage=0.2).
+# Reduce dataset using the best KMeans model according to the silhouette score. 
+# In this case, we are mantaining the 70% of the original dataset (reduction=0.7), 
+# obtaining the closest images from each cluster (selection_type='representative') 
+# and ensuring that 20% of the selected images within each cluster are diverse (diverse_percentage=0.2).
 # The reduced dataset will be saved to the specified output directory ("reduced/dataset/path")
-reduced_dataset = kmeans.select_balanced_images(n_clusters=best_k, reduction=0.7, selection_type='representative', diverse_percentage=0.2, output="reduced/dataset/path")
-
-# Analyze reduced dataset
-reduced_dataset.analyze(plot=True, output="path/to/kmeans/output")
+reduced_dataset = kmeans.select_balanced_images(n_clusters=best_k, 
+                                                reduction=0.7, 
+                                                selection_type='representative', 
+                                                diverse_percentage=0.2, 
+                                                output="reduced/dataset/path")
 ```
 
 ## 🧰 Requirements
+
+The dependencies and requirements to use this library are in the requirements.txt file. The following list includes all the dependencies:
+
+* Kneed 
+* Matplotlib 
+* Numpy
+* OpenCV
+* Pillow
+* Scikit learn
+* Scipy
+* Skimage
+* Tensorflow
+* Torch
+* Tqdm
+* Transformers
 
 ## ✉️ Contact 
 

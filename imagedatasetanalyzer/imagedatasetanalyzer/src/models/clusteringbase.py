@@ -5,6 +5,8 @@ import random
 
 from scipy.spatial.distance import cdist
 
+import logging
+
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
@@ -19,6 +21,16 @@ class ClusteringBase():
         self.dataset = dataset
         self.embeddings = embeddings
         self.random_state = random_state
+
+        self.logger = logging.getLogger(self.__class__.__name__)
+        if not self.logger.hasHandlers():  
+            handler = logging.StreamHandler()  
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+            self.logger.setLevel(logging.INFO)
 
     def _evaluate_metric(self, metric: str):
         if metric == 'silhouette':
@@ -185,7 +197,8 @@ class ClusteringBase():
 
         if selection_type.lower() == "random":
             num_selected_images = min(num_selected_images, len(cluster_filenames))
-            return random.sample(cluster_filenames, num_selected_images)
+
+            return random.sample(cluster_filenames.tolist(), num_selected_images)
 
         if cluster_centers is not None and len(cluster_centers) > cluster_idx and cluster_idx != -1:
             cluster_center = cluster_centers[cluster_idx]
@@ -209,20 +222,29 @@ class ClusteringBase():
 
         return np.unique(np.concatenate((selected_images, diverse_images)))
 
-    def _select_balanced_images(self, labels: np.ndarray, cluster_centers: np.ndarray | None, reduction: int, selection_type: str,
-                               diverse_percentage: int, include_outliers: bool, output_directory: str):
+    def _select_balanced_images(self, labels: np.ndarray, cluster_centers: np.ndarray | None, reduction: float, selection_type: str,
+                               diverse_percentage: float, include_outliers: bool, output_directory: str):
         """
         Selects a balanced subset of images.
 
         Args:
-            dataset (ImageDataset): The dataset containing images and metadata.
-            labels (array): Cluster labels for each image, obtained from a clustering algorithm. Outliers are marked as -1.
-            cluster_centers (array): Centroids or medoids of the clusters. If None, they are calculated dinamically. Defaults to None. 
-            
-            selection_type (str): Whether to select "representative" images (closest to the cluster center), "diverse" images (farthest from 
-                                  the cluster center) or "random". Defaults to representative. 
-            include_outliers (bool): Whether to include outliers (label -1) in the selection.
-            output_directory (str, optional): Directory to save reduced dataset. 
+            labels (np.ndarray): Cluster labels for each image, obtained from a clustering algorithm. Each label corresponds to the cluster 
+                                an image belongs to. Outliers are marked with the label -1.
+            cluster_centers (np.ndarray | None): Centroids or medoids of the clusters. If None, the cluster centers are calculated dynamically 
+                                                based on the current clustering. Defaults to None.
+            reduction (float): The fraction of images to retain. Must be a value between 0 and 1, where 0 means no images are retained, and 1 
+                            means all images are kept.
+            selection_type (str): Specifies the selection strategy. Options include:
+                                - "representative": Selects images closest to the cluster center (most typical of the cluster).
+                                - "diverse": Selects images farthest from the cluster center (maximizing diversity).
+                                - "random": Selects images randomly from each cluster.
+                                Defaults to "representative".
+            diverse_percentage (float): Specifies the percentage of selected images to prioritize diversity when `selection_type` is "representative".
+                                        Must be a value between 0 and 1.
+            include_outliers (bool): Determines whether images marked as outliers (label -1) are included in the selection process. If True, 
+                                    outliers are included in the reduced dataset; otherwise, they are excluded.
+            output_directory (str): Path to the directory where the reduced dataset will be saved. The reduced dataset includes the selected 
+                                    images.
 
         Returns:
             ImageDataset: Reduced dataset instance.
@@ -233,10 +255,13 @@ class ClusteringBase():
         if cluster_centers is None and selection_type.lower() != 'random':
             self._calculate_medoids(self.embeddings, labels)
 
+        if selection_type.lower() != 'representative':
+            diverse_percentage = 0
+
         total_images = len(self.dataset)
         images_embeddings = self.embeddings.copy()
 
-        if not include_outliers:
+        if -1 in labels and not include_outliers:
             print("Skipping outliers...")
             
             valid_indices = labels != -1
@@ -275,14 +300,17 @@ class ClusteringBase():
                     shutil.copy(src_path, dst_path)
 
             print(f"Cluster {cluster_idx}: {len(selected_images)} images selected from {len(cluster_embeddings)}.")
-            print(f"  - {num_diverse_images} diverse images and {num_selected_images - num_diverse_images} representative images.")
+            if diverse_percentage > 0:
+                print(f"  - {num_diverse_images} diverse images and {num_selected_images - num_diverse_images} representative images.")
+            else:
+                print(f" - {num_selected_images} {selection_type} images.")
 
         if output_directory: 
             print(f"Reduced dataset saved to: {output_directory}")
         else:
             output_directory = self.dataset.img_dir
 
-        reduced_dataset = ImageDataset(output_directory, reduced_dataset_files, processor= self.dataset.processor)
+        reduced_dataset = ImageDataset(output_directory, reduced_dataset_files)
 
         print(f"Dataset reduced to {len(reduced_dataset)} images.")
 

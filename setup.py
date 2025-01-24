@@ -1,21 +1,20 @@
 from setuptools import setup, find_packages
 
 def read_requirements(file):
-    with open(file) as f:
+    with open(file, "r", encoding="utf-8") as f:
         return f.read().splitlines()
 
 def read_file(file):
-   with open(file) as f:
+   with open(file, "r", encoding="utf-8") as f:
         return f.read()
     
 long_description = read_file("README.md")
-version = read_file("VERSION")
 requirements = read_requirements("requirements.txt")
 
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.1.1',
+    version = '0.1.4',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',

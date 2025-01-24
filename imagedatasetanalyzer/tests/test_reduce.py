@@ -47,19 +47,16 @@ if __name__ == "__main__":
     dataset = ImageDataset(img_dir)
     label_dataset = ImageLabelDataset(img_dir=img_dir, label_dir=labels_dir, background=0)
 
-    #emb = HuggingFaceEmbedding("openai/clip-vit-base-patch16")
-    #emb = PyTorchEmbedding("densenet121")
-    #emb = OpenCVLBPEmbedding(8, 24, resize_height=224, resize_width=224)
-    emb = TensorflowEmbedding("MobileNetV2")
+    label_dataset.analyze(output=analysis_path, verbose=True)
 
-    embeddings = emb.generate_embeddings(dataset)
+    """embeddings = np.load('embeddings\\embeddings_crack_pytorch_resnet101.npy')
     
     kmeans = KMeansClustering(dataset, embeddings, random_state)
     agglomerative = AgglomerativeClustering(dataset, embeddings, random_state)
     dbscan = DBSCANClustering(dataset, embeddings, random_state)
     optics = OPTICSClustering(dataset, embeddings, None)
 
-    reduced_dataset_kmeans = kmeans.select_balanced_images(4, 0.7, diverse_percentage=0.5)
-    reduced_dataset_agg = agglomerative.select_balanced_images(2, 'ward', 0.7, diverse_percentage=0.5)
-    reduced_dataset_dbscan = dbscan.select_balanced_images(6.551724137931035, 18, 0.7, diverse_percentage=0.5)
-    reduced_dataset_optics = optics.select_balanced_images(12, 0.7, diverse_percentage=0.5)
+    reduced_dataset_kmeans = kmeans.select_balanced_images(2, 0.6, selection_type='diverse')
+    #reduced_dataset_agg = agglomerative.select_balanced_images(2, 'single', 0.8, diverse_percentage=0, selection_type='random')
+    #reduced_dataset_dbscan = dbscan.select_balanced_images(6.551724137931035, 18, 0.7, diverse_percentage=0.5)
+    #reduced_dataset_optics = optics.select_balanced_images(12, 0.7, diverse_percentage=0.5)"""

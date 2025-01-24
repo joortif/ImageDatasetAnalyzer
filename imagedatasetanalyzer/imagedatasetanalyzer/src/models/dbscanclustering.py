@@ -9,7 +9,7 @@ import numpy as np
 
 class DBSCANClustering(ClusteringBase):
     
-    def find_best_DBSCAN(self, eps_range: range, min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None) -> tuple:
+    def find_best_DBSCAN(self, eps_range: range, min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None, verbose: bool=False) -> tuple:
         """
         Evaluates DBSCAN clustering using the specified metric, including noise points.
 
@@ -19,6 +19,7 @@ class DBSCANClustering(ClusteringBase):
             metric (str, optional): The evaluation metric to use ('silhouette', 'calinski', 'davies'). Defaults to 'silhouette'.
             plot (bool, optional): Whether to plot the results. Defaults to True.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
+            verbose (bool, optional): Whether to display warnings and status messages in the logs. If True, logs are written using the logger. Defaults to False.
 
         Returns:
             tuple: The best 'eps', the best 'min_samples', and the best score.
@@ -32,13 +33,15 @@ class DBSCANClustering(ClusteringBase):
                 labels = dbscan.fit_predict(self.embeddings)
                 
                 if np.all(labels == -1):
-                    print(f"Warning: No clusters found for eps={eps}, min_samples={min_samples}. All points are noise.")
+                    if verbose:
+                        self.logger.warning(f"No clusters found for eps={eps}, min_samples={min_samples}. All points are noise.")
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
                 unique_labels = np.unique(labels)
                 if len(unique_labels) == len(self.embeddings):
-                    print(f"Warning: Each point is assigned to its own cluster for eps={eps}, min_samples={min_samples}.")
+                    if verbose:
+                        self.logger.warning(f"Each point is assigned to its own cluster for eps={eps}, min_samples={min_samples}.")
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
@@ -47,7 +50,8 @@ class DBSCANClustering(ClusteringBase):
                 valid_embeddings = self.embeddings[valid_indices]
 
                 if len(np.unique(valid_labels)) == 1:
-                    print(f"Warning: Only 1 cluster found for eps={eps}, min_samples={min_samples}. Can't calculate metric {metric.lower()}.")
+                    if verbose:
+                        self.logger.warning(f"Only 1 cluster found for eps={eps}, min_samples={min_samples}. Can't calculate metric {metric.lower()}.")
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
                     continue
 
@@ -58,7 +62,8 @@ class DBSCANClustering(ClusteringBase):
         best_eps, best_min_samples, best_score = best_combination
 
         if best_score == -1:
-            print(f"Warning: No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+            if verbose:
+                self.logger.warning(f"No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
             return best_eps, best_min_samples, best_score
 
         filtered_min_samples = list(min_samples_range)[:9]
