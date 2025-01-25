@@ -144,7 +144,7 @@ The dependencies and requirements to use this library are in the requirements.tx
 * Pillow
 * Scikit learn
 * Scipy
-* Skimage
+* Scikit image
 * Tensorflow
 * Torch
 * Tqdm
