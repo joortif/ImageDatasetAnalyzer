@@ -4,6 +4,7 @@ from codecs import open
 # For installing PyTorch and Torchvision in Windows
 import sys
 import subprocess
+import pkg_resources
 
 with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
@@ -20,43 +21,37 @@ def remove_requirements(requirements, remove_elem):
     for requirement in requirements:
         if remove_elem not in requirement:
             new_requirements.append(requirement)
-
     return new_requirements
 
 def install_pytorch_for_gpu():
-    """ Try to install PyTorch and Torchvision with GPU support (CUDA) """
+    """Try to install PyTorch and Torchvision with GPU support (CUDA)"""
     print('Checking for GPU support...')
     cuda_version = "cu116"  # Update this if you want to use a different CUDA version
-    torch_version = f"torch>=1.13.0,<2.0.0+{cuda_version}"
-    torchvision_version = f"torchvision>=0.14.0,<1.0.0+{cuda_version}"
+    torch_version = f"torch==1.13.1+{cuda_version}"
+    torchvision_version = f"torchvision==0.14.1+{cuda_version}"
 
     try:
-        code = subprocess.call([
+        subprocess.check_call([
             'pip', 'install', torch_version, torchvision_version,
             '-f', 'https://download.pytorch.org/whl/torch_stable.html'
         ])
-        if code != 0:
-            raise Exception('PyTorch GPU installation failed.')
-    except Exception as e:
+    except subprocess.CalledProcessError as e:
         print(f"Error installing PyTorch GPU version: {e}")
         print("Trying to install the CPU version instead...")
         install_pytorch_for_cpu()
 
 def install_pytorch_for_cpu():
-    """ Fallback to install PyTorch and Torchvision with CPU support """
+    """Fallback to install PyTorch and Torchvision with CPU support"""
     torch_version = "torch>=1.13.0,<2.0.0"
     torchvision_version = "torchvision>=0.14.0,<1.0.0"
 
     try:
-        code = subprocess.call([
+        subprocess.check_call([
             'pip', 'install', torch_version, torchvision_version,
             '-f', 'https://download.pytorch.org/whl/torch_stable.html'
         ])
-        if code != 0:
-            raise Exception('PyTorch CPU installation failed.')
-        else:
-            print('Successfully installed PyTorch and Torchvision for CPU.')
-    except Exception as e:
+        print('Successfully installed PyTorch and Torchvision for CPU.')
+    except subprocess.CalledProcessError as e:
         print(f"Error installing PyTorch CPU version: {e}")
         print("Please install PyTorch and Torchvision manually following the instructions at: https://pytorch.org/get-started/")
 
@@ -64,18 +59,26 @@ def install_pytorch_for_cpu():
 install_reqs = remove_requirements(install_reqs, 'torch')
 install_reqs = remove_requirements(install_reqs, 'torchvision')
 
+def check_and_install_pytorch():
+    """Check if PyTorch and Torchvision are installed and compatible"""
+    try:
+        # Check if torch and torchvision are installed and compatible with the versions in requirements.txt
+        pkg_resources.require("torch>=1.13.0,<2.0.0")
+        pkg_resources.require("torchvision>=0.14.0,<1.0.0")
+        print("Required versions of PyTorch and Torchvision are already installed.")
+    except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+        print("PyTorch or Torchvision not found or incompatible, installing the correct versions...")
+        install_pytorch_for_gpu()
+
 print(f"Platform: {sys.platform}")
 if sys.platform in ['win32', 'cygwin', 'windows']:
-    # Attempt to install GPU-compatible versions of PyTorch and Torchvision
-    try:
-        install_pytorch_for_gpu()
-    except:
-        print("Fallback to manual PyTorch installation.") 
+    # Check and install the correct versions of PyTorch and Torchvision if necessary
+    check_and_install_pytorch() 
 
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.1.9',
+    version = '0.1.10',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',

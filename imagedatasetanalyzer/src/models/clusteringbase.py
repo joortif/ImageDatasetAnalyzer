@@ -17,7 +17,25 @@ from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class ClusteringBase():
 
+    """
+    ClusteringBase class for performing clustering tasks on image datasets and generating visualizations.
+
+    This class facilitates the process of performing clustering on a dataset of image embeddings. It offers methods for dimensionality reduction, 
+    cluster visualization, selecting images from clusters, and evaluating clustering quality.
+
+    Attributes:
+        dataset (ImageDataset): Dataset of images used for clustering.
+        embeddings (np.ndarray): Feature embeddings for each image.
+        random_state (int): Random seed used for reproducibility.
+    """
+
     def __init__(self, dataset: ImageDataset, embeddings: np.ndarray,random_state: int):
+        """
+        Args:
+            dataset (ImageDataset): Dataset of images used for clustering.
+            embeddings (np.ndarray): Feature embeddings for each image.
+            random_state (int): Random seed used for reproducibility.
+        """
         self.dataset = dataset
         self.embeddings = embeddings
         self.random_state = random_state

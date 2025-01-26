@@ -9,6 +9,15 @@ from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 
 class OPTICSClustering(ClusteringBase):
+    """
+    Performs data clustering using the OPTICS algorithm. This class allows evaluating clustering performance based on different metrics, 
+    applying OPTICS clustering to the data, and selecting a balanced subset of images from the dataset based on the clustering results.
+
+    Attributes:
+        dataset (ImageDataset): Dataset of images used for clustering.
+        embeddings (np.ndarray): Feature embeddings for each image.
+        random_state (int): Random seed used for reproducibility.
+    """
 
     def find_best_OPTICS(self,min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None, verbose: bool=False):
         """

@@ -8,6 +8,18 @@ from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 import numpy as np
 
 class DBSCANClustering(ClusteringBase):
+    """
+    DBSCANClustering class for performing DBSCAN clustering tasks on image datasets.
+
+    This class is designed to apply DBSCAN (Density-Based Spatial Clustering of Applications with Noise) on image embeddings, 
+    evaluate clustering configurations, visualize the clustering results, and select representative or diverse subsets 
+    of images based on the clustering results.
+
+    Attributes:
+        dataset (ImageDataset): Dataset of images used for clustering.
+        embeddings (np.ndarray): Feature embeddings for each image.
+        random_state (int): Random seed used for reproducibility.
+    """
     
     def find_best_DBSCAN(self, eps_range: range, min_samples_range: range, metric: str='silhouette', plot: bool=True, output: str=None, verbose: bool=False) -> tuple:
         """

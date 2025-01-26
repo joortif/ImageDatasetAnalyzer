@@ -11,6 +11,16 @@ from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class KMeansClustering(ClusteringBase): 
+    """
+    Performs data clustering using the KMeans algorithm. This class allows finding the optimal number of clusters 
+    using the elbow rule, evaluating the clustering quality using various metrics, applying clustering to the data, 
+    and selecting a balanced subset of images based on the clustering results.
+
+    Attributes:
+        dataset (ImageDataset): Dataset of images used for clustering.
+        embeddings (np.ndarray): Feature embeddings for each image.
+        random_state (int): Random seed used for reproducibility.
+    """
 
     def find_elbow(self, clusters_max: int, plot: bool=True, output: str=None) -> int:
         """

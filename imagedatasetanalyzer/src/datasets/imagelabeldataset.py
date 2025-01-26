@@ -15,9 +15,26 @@ from imagedatasetanalyzer.exceptions.exceptions import ExtensionNotFoundExceptio
 
 
 class ImageLabelDataset(ImageDataset):
+    """
+    Represents a labeled image dataset, extending the functionality of ImageDataset.
+
+    Attributes:
+        img_dir (str): Directory containing image files.
+        label_dir (str): Directory containing label files.
+        image_files (np.ndarray): Array of image filenames (optional).
+        color_dict (dict): Mapping between RGB values and class labels (optional).
+        background (int): Identifier for the background class (optional).
+    """
 
     def __init__(self, img_dir: str, label_dir: str, image_files: np.ndarray = None, color_dict: dict=None, background: int=None):
-        
+        """
+        Args:
+            img_dir (str): Directory containing image files.
+            label_dir (str): Directory containing label files.
+            image_files (np.ndarray, optional): Array of image filenames to load. If None, all images from the directory are loaded.
+            color_dict (dict, optional): Mapping between RGB values and class labels. If None, it is assumed that labels are already in a format that can be mapped to integers.
+            background (int, optional): Identifier for the background class. If None, no background class is considered.
+        """
         super().__init__(img_dir, image_files)
         self.label_dir = label_dir
         self.color_dict = color_dict

@@ -7,8 +7,23 @@ from imagedatasetanalyzer.src.embeddings.embedding import Embedding
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class PyTorchEmbedding(Embedding):
+    """
+    PyTorchEmbedding class for generating embeddings using pre-trained PyTorch models.
+
+    This class utilizes pre-trained PyTorch models to extract feature embeddings from image datasets.
+    The embeddings can be used for tasks such as clustering, classification, or visualization.
+
+    Attributes:
+        model_name (str): The name of the pre-trained model to use from PyTorch.
+        batch_size (int): The number of images to process in each batch.
+    """
 
     def __init__(self, model_name: str, batch_size: int=8):
+        """
+        Args:
+            model_name (str): The name of the pre-trained model to use from PyTorch.
+            batch_size (int, optional): The number of images to process in each batch. Defaults to 8.
+        """
         self.weights = models.get_model_weights(model_name).DEFAULT
         self.processor = self.weights.transforms()
 

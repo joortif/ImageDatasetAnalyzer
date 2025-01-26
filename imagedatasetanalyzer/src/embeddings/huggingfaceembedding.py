@@ -8,7 +8,26 @@ from imagedatasetanalyzer.src.embeddings.embedding import Embedding
 
 
 class HuggingFaceEmbedding(Embedding):
+    """
+    HuggingFaceEmbedding class for generating embeddings using HuggingFace models.
+
+    This class leverages pre-trained models from the HuggingFace Hub to extract 
+    feature embeddings from image datasets. The embeddings can then be used for 
+    downstream tasks such as clustering, classification, or visualization.
+
+    Attributes:
+        model_name (str): The name of the HuggingFace model to use.
+        batch_size (int): The number of images to process in each batch.
+        processor (AutoProcessor): Processor for preparing input images for the model.
+        model (AutoModel): The HuggingFace model used for generating embeddings.
+    """
+    
     def __init__(self, model_name: str, batch_size: int=8):
+        """
+        Args:
+            model_name (str): The name of the HuggingFace model to use.
+            batch_size (int, optional): The number of images to process in each batch. Defaults to 8.
+        """
         self.model_name = model_name
         self.processor = AutoProcessor.from_pretrained(model_name, use_fast=True)
         self.model = AutoModel.from_pretrained(model_name)

@@ -10,8 +10,32 @@ from imagedatasetanalyzer.src.embeddings.embedding import Embedding
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class OpenCVLBPEmbedding(Embedding):
+    """
+    OpenCVLBPEmbedding class for generating Local Binary Pattern (LBP) embeddings using OpenCV.
+
+    This class uses OpenCV to compute LBP features from images, which are then converted into embeddings.
+    These embeddings can be used for various tasks like clustering, classification, or visualization.
+
+    Attributes:
+        radius (int): The radius of the LBP neighborhood.
+        num_points (int): The number of points to consider in the LBP calculation.
+        batch_size (int): The number of images to process in each batch.
+        method (str): The LBP method (e.g., 'uniform').
+        resize_height (int | None): The height to resize images to (optional).
+        resize_width (int | None): The width to resize images to (optional).
+    """
     
     def __init__(self, radius: int, num_points: int, resize_height: int | None=None, resize_width: int | None=None, batch_size: int = 8, method: str="uniform"):
+        """
+        Args:
+            radius (int): The radius of the LBP neighborhood.
+            num_points (int): The number of points to consider in the LBP calculation.
+            resize_height (int | None, optional): The height to resize images to (optional).
+            resize_width (int | None, optional): The width to resize images to (optional).
+            batch_size (int, optional): The number of images to process in each batch. Defaults to 8.
+            method (str, optional): The LBP method to use (e.g., 'uniform'). Defaults to 'uniform'.
+        """
+        
         self.radius = radius
         self.num_points = num_points
         self.batch_size = batch_size

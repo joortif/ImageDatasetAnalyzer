@@ -1,12 +1,12 @@
-from .imagedatasetanalyzer.src.datasets import ImageDataset
-from .imagedatasetanalyzer.src.datasets import ImageLabelDataset
+from .src.datasets import ImageDataset
+from .src.datasets import ImageLabelDataset
 
-from .imagedatasetanalyzer.src.embeddings import HuggingFaceEmbedding
-from .imagedatasetanalyzer.src.embeddings import OpenCVLBPEmbedding 
-from .imagedatasetanalyzer.src.embeddings import TensorflowEmbedding
-from .imagedatasetanalyzer.src.embeddings import PyTorchEmbedding
+from .src.embeddings import HuggingFaceEmbedding
+from .src.embeddings import OpenCVLBPEmbedding 
+from .src.embeddings import TensorflowEmbedding
+from .src.embeddings import PyTorchEmbedding
 
-from .imagedatasetanalyzer.src.models import KMeansClustering 
-from .imagedatasetanalyzer.src.models import AgglomerativeClustering 
-from .imagedatasetanalyzer.src.models import DBSCANClustering 
-from .imagedatasetanalyzer.src.models import OPTICSClustering
+from .src.models import KMeansClustering 
+from .src.models import AgglomerativeClustering 
+from .src.models import DBSCANClustering 
+from .src.models import OPTICSClustering

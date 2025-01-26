@@ -13,9 +13,28 @@ from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 
 class TensorflowEmbedding(Embedding):
+    """
+    TensorflowEmbedding class for generating embeddings using pre-trained TensorFlow models. ImageNet weights are used
+    and its normalization attributes (pixel mean and std).
+
+    This class utilizes TensorFlow's pre-trained models to extract feature embeddings from image datasets.
+    The embeddings can be used for tasks such as clustering, classification, or visualization.
+
+    Attributes:
+        model_name (str): The name of the pre-trained model to use from TensorFlow.
+        batch_size (int): The number of images to process in each batch.
+        resize_height (int): The height to resize images for the model.
+        resize_width (int): The width to resize images for the model.
+    """
 
     def __init__(self, model_name: str, batch_size: int=8, resize_height: int=224, resize_width: int=224):
-
+        """
+        Args:
+            model_name (str): The name of the pre-trained model to use from TensorFlow.
+            batch_size (int, optional): The number of images to process in each batch. Defaults to 8.
+            resize_height (int, optional): The height to resize images for the model. Defaults to 224.
+            resize_width (int, optional): The width to resize images for the model. Defaults to 224.
+        """
         self.model_name = model_name
         self.height = resize_height
         self.width = resize_width

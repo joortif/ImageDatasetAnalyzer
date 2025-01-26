@@ -8,6 +8,16 @@ from PIL import Image
 
 
 class ImageDataset(Dataset):
+    """
+    Represents a dataset of images stored in a directory.
+
+    This class provides functionality to load images, retrieve individual images,
+    and analyze the distribution of image sizes in the dataset.
+
+    Attributes:
+        img_dir (str): Path to the directory containing the images.
+        image_files (np.ndarray): List of image filenames in the directory. If not provided, all images in the directory will be included.
+    """
     def __init__(self, image_dir: str, image_files: np.ndarray=None):
         """
         Args:

@@ -9,6 +9,18 @@ from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
 class AgglomerativeClustering(ClusteringBase):
+    """
+    AgglomerativeClustering class for performing agglomerative clustering tasks on image datasets.
+
+    This class is designed to perform agglomerative clustering on image embeddings, evaluate different cluster configurations, 
+    and provide methods for visualizing the clustering results, selecting representative or diverse subsets of images, 
+    and evaluating clustering quality using various metrics.
+
+    Attributes:
+        dataset (ImageDataset): Dataset of images used for clustering.
+        embeddings (np.ndarray): Feature embeddings for each image.
+        random_state (int): Random seed used for reproducibility.
+    """
 
     def find_best_agglomerative_clustering(self, n_clusters_range: range, metric: str='silhouette', linkages=None, plot=True, output: str=None) -> tuple: 
         """
