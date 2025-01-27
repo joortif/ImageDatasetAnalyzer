@@ -378,8 +378,8 @@ class ImageLabelDataset(ImageDataset):
                 elip_min
             ])
 
-        if len(class_ids) <= 2:
-            print("Metrics won't be plotted since the dataset is not multiclass.")
+        if len(class_ids) <= 1:
+            print("Metrics won't be plotted since the dataset has only one class.")
             plot=False
 
         if plot:
