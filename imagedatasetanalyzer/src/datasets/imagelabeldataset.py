@@ -12,6 +12,9 @@ import time
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 from imagedatasetanalyzer.enumerations.enums import Extensions
 from imagedatasetanalyzer.exceptions.exceptions import ExtensionNotFoundException
+from imagedatasetanalyzer.src.transformers.colortomultilabel import ColorMaskToMultilabelTransformer
+from imagedatasetanalyzer.src.transformers.jsontomultilabel import JSONToMultilabelTransformer
+from imagedatasetanalyzer.src.transformers.txttomultilabel import TXTToMultilabelTransformer
 
 
 class ImageLabelDataset(ImageDataset):
@@ -31,6 +34,7 @@ class ImageLabelDataset(ImageDataset):
         Args:
             img_dir (str): Directory containing image files.
             label_dir (str): Directory containing label files.
+            output_dir (str, optional): Directory to save the conversions of labels to multilabel. This transformation is done when labels are in JSON, TXT format or their type is multicolor. 
             image_files (np.ndarray, optional): Array of image filenames to load. If None, all images from the directory are loaded.
             color_dict (dict, optional): Mapping between RGB values and class labels. If None, it is assumed that labels are already in a format that can be mapped to integers.
             background (int, optional): Identifier for the background class. If None, no background class is considered.
@@ -47,41 +51,6 @@ class ImageLabelDataset(ImageDataset):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
             self.logger.setLevel(logging.INFO)
-
-    def _check_label_extensions(self, verbose):
-        """
-        Checks the extensions of label files in the label directory to ensure consistency.
-
-        Args:
-            verbose (bool): If True, logs the process and any issues found.
-
-        Returns:
-            str: The extension of the label files if consistent.
-
-        Raises:
-            ValueError: If multiple extensions are found in the label directory.
-            ExtensionNotFoundException: If the extension is not recognized by the system.
-        """
-        
-        if verbose:
-            self.logger.info(f"Checking label extensions from path: {self.label_dir}...")
-
-        labels_ext = {os.path.splitext(file)[1] for file in os.listdir(self.label_dir)}
-
-        if len(labels_ext) == 1:
-            ext = labels_ext.pop()  
-            try:
-                enum_ext = Extensions.extensionToEnum(ext)
-
-                if enum_ext:
-                    print(f"All labels are in {enum_ext.name} format.")
-                    return Extensions.enumToExtension(enum_ext)
-                
-            except ExtensionNotFoundException as e:
-                print(f"All labels are in unknown {ext} format.")
-                raise e
-        else:
-            raise ValueError(f"The directory contains multiple extensions for labels: {labels_ext}.")
 
     def _compare_directories(self, verbose):
         """
@@ -175,54 +144,22 @@ class ImageLabelDataset(ImageDataset):
             self.logger.info(f"Checking total number of classes from dataset labels...")
         
         unique_classes = set()
-        color_mask = False
 
         for img_arr in labels:
             if img_arr.ndim == 2:                               #Multilabel or binary label
                 unique_classes.update(np.unique(img_arr))
                     
             elif img_arr.ndim == 3 and img_arr.shape[2] == 3:   #RGB Mask
-                color_mask=True
                 unique_classes.update(map(tuple, img_arr.reshape(-1, 3)))
 
         if verbose:
-            if color_mask:
-                print(f"The labels from the dataset are color labels.")
-            elif len(unique_classes) == 2:
-                print(f"The labels from the dataset are binary labels.")
+            if len(unique_classes) == 2:
+                print(f"The labels from the dataset are binary.")
             else:
                 print(f"The labels from the dataset are multiclass.")
         
         print(f"{len(unique_classes)} classes found from dataset labels: {unique_classes}")
         return unique_classes
-    
-    def _rgb_mask_to_multilabel(self, labels):
-        """
-        Converts RGB masks into multi-label masks using the provided color dictionary.
-
-        Args:
-            labels (list): A list of RGB label images as NumPy arrays.
-
-        Returns:
-            list: A list of multi-label masks as NumPy arrays.
-        """
-        masks = []
-
-        for color_mask in labels:
-            multilabel_mask = np.zeros(color_mask.shape[:2], dtype=np.uint8)
-
-            pixel_colors = color_mask.reshape(-1, color_mask.shape[-1])
-
-            for idx, pixel_color in enumerate(pixel_colors):
-                color_tuple = tuple(pixel_color)
-                if color_tuple in self.color_dict:
-                    multilabel_mask.reshape(-1)[idx] = self.color_dict[color_tuple]
-
-            multilabel_mask = multilabel_mask.reshape(color_mask.shape[:2])
-
-            masks.append(multilabel_mask)
-    
-        return masks
     
     def _find_contours(self, labels, verbose):
         """
@@ -417,14 +354,16 @@ class ImageLabelDataset(ImageDataset):
 
                 _, axs = plt.subplots(rows, cols, figsize=(5 * cols, 5 * rows))
                 axs = axs.flatten()  
-                class_ids = list(range(len(values)))
+                class_indices = range(len(class_ids)) 
 
                 for idx, title in enumerate(titles):
-                    axs[idx].bar(class_ids, [v[idx] for v in values])
+                    axs[idx].bar(class_indices, [v[idx] for v in values])
                     axs[idx].set_title(title)
                     axs[idx].set_xlabel("Class ID")
                     axs[idx].set_ylabel("Value")
                     axs[idx].grid(axis="y")
+                    axs[idx].set_xticks(class_indices)  
+                    axs[idx].set_xticklabels(class_ids)
  
                 for idx in range(len(titles), len(axs)):
                     axs[idx].axis("off")
@@ -454,16 +393,13 @@ class ImageLabelDataset(ImageDataset):
         if verbose:
             start_time = time.time()
 
-
-        label_extension = self._check_label_extensions(verbose=verbose)
-
         self._compare_directories(verbose=verbose)
 
         label_files = []
         for img_file in self.image_files:
             base_name, _ = os.path.splitext(img_file)
             
-            label_file = os.path.join(self.label_dir, f"{base_name}{label_extension}")
+            label_file = os.path.join(self.label_dir, f"{base_name}.png")
             
             if os.path.exists(label_file):  
                 label_files.append(label_file)
@@ -476,17 +412,7 @@ class ImageLabelDataset(ImageDataset):
 
         labels_arr = self._labels_to_array(label_files)
 
-        classes_set = self._get_classes_from_labels(labels_arr, verbose)
-        
-        element = next(iter(classes_set))  
-        if isinstance(element, tuple):                 #Color mask (RGB)
-            if self.color_dict is None:
-                self.color_dict = {v: k for k, v in enumerate(classes_set)}
-                
-                if verbose:
-                    self.logger.warning(f"Color dictionary for labels is missing, it has been automatically created: {self.color_dict}")
-
-            labels_arr = self._rgb_mask_to_multilabel(labels_arr)
+        classes = self._get_classes_from_labels(labels_arr, verbose)
         
         contours_dict= self._find_contours(labels_arr, verbose)
         self._compute_metrics(contours_dict, plot, output)
