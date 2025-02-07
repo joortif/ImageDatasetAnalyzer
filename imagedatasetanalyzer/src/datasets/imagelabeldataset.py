@@ -10,11 +10,6 @@ import matplotlib.pyplot as plt
 import time
 
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-from imagedatasetanalyzer.enumerations.enums import Extensions
-from imagedatasetanalyzer.exceptions.exceptions import ExtensionNotFoundException
-from imagedatasetanalyzer.src.transformers.colortomultilabel import ColorMaskToMultilabelTransformer
-from imagedatasetanalyzer.src.transformers.jsontomultilabel import JSONToMultilabelTransformer
-from imagedatasetanalyzer.src.transformers.txttomultilabel import TXTToMultilabelTransformer
 
 
 class ImageLabelDataset(ImageDataset):

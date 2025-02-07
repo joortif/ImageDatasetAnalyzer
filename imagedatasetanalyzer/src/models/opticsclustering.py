@@ -115,7 +115,7 @@ class OPTICSClustering(ClusteringBase):
 
         num_clusters = len(set(labels))
 
-        self.plot_clusters(embeddings_2d, labels, num_clusters, reduction, output)
+        self.plot_clusters(embeddings_2d, labels, num_clusters, reduction, 'optics', output)
 
         return labels
     

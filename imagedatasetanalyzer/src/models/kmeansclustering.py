@@ -124,7 +124,6 @@ class KMeansClustering(ClusteringBase):
         Parameters:
             embeddings (array): High-dimensional data to be clustered, typically a 2D array.
             n_clusters (int): Number of clusters for KMeans.
-            random_state (int): Random seed for reproducibility.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
             reduction (str, optional): Dimensionality reduction method ('tsne' or 'pca'). Defaults to 'tsne'.
 
@@ -136,7 +135,7 @@ class KMeansClustering(ClusteringBase):
 
         embeddings_2d = self.reduce_dimensions(reduction)
 
-        self.plot_clusters(embeddings_2d, labels, n_clusters, reduction, output)
+        self.plot_clusters(embeddings_2d, labels, n_clusters, reduction, 'kmeans', output)
         
         return labels
     

@@ -78,13 +78,13 @@ class AgglomerativeClustering(ClusteringBase):
         return best_k, best_linkage, best_score
 
 
-    def clustering(self, num_clusters: int, linkage: str, reduction='tsne', output: str=None) -> np.ndarray:
+    def clustering(self, n_clusters: int, linkage: str, reduction='tsne', output: str=None) -> np.ndarray:
         """
         Applies AgglomerativeClustering clustering to the given embeddings, reduces dimensionality for visualization, 
         and optionally saves or displays a scatter plot of the clusters.
 
         Parameters:
-            num_clusters (int): Number of clusters for AgglomerativeClustering.  
+            n_clusters (int): Number of clusters for AgglomerativeClustering.  
             linkage (str): Type of linkage to use with AgglomerativeClustering: 'ward', 'complete', 'average' or 'single'.
             reduction (str, optional): Dimensionality reduction method ('tsne' or 'pca'). Defaults to 'tsne'.
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
@@ -92,12 +92,12 @@ class AgglomerativeClustering(ClusteringBase):
         Returns:
             array: Cluster labels assigned by KMeans for each data point.
         """
-        aggClusteringModel = sklearn.cluster.AgglomerativeClustering(n_clusters=num_clusters, linkage=linkage)
+        aggClusteringModel = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
         labels = aggClusteringModel.fit_predict(self.embeddings)
 
         embeddings_2d = self.reduce_dimensions(reduction)
 
-        self.plot_clusters(embeddings_2d, labels, num_clusters, reduction, output)
+        self.plot_clusters(embeddings_2d, labels, n_clusters, reduction, 'agglomerative', output)
 
         return labels
     

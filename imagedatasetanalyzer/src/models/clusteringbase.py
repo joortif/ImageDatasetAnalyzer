@@ -75,7 +75,7 @@ class ClusteringBase():
         
         return reducer.fit_transform(self.embeddings)
 
-    def plot_clusters(self, embeddings_2d: np.ndarray, labels: np.ndarray, num_clusters: int, reduction: str, output: str = None):
+    def plot_clusters(self, embeddings_2d: np.ndarray, labels: np.ndarray, num_clusters: int, reduction: str, clustering_model: str, output: str = None):
         """
         Plots the clustering result in 2D after dimensionality reduction.
         """
@@ -104,7 +104,7 @@ class ClusteringBase():
         plt.grid(True)
 
         if output:
-            output = os.path.join(output, f"clustering_{reduction}.png")
+            output = os.path.join(output, f"clustering_{clustering_model}_{reduction}.png")
             plt.savefig(output, bbox_inches='tight')
             print(f"Plot saved to {output}")
             plt.close()
