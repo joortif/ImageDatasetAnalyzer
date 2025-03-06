@@ -24,7 +24,7 @@ class ImageLabelDataset(ImageDataset):
         background (int): Identifier for the background class (optional).
     """
 
-    def __init__(self, img_dir: str, label_dir: str, image_files: np.ndarray = None, color_dict: dict=None, background: int=None):
+    def __init__(self, img_dir: str, label_dir: str, image_files: np.ndarray = None, color_dict: dict=None, class_map: dict=None, background: int=None):
         """
         Args:
             img_dir (str): Directory containing image files.
@@ -32,12 +32,14 @@ class ImageLabelDataset(ImageDataset):
             output_dir (str, optional): Directory to save the conversions of labels to multilabel. This transformation is done when labels are in JSON, TXT format or their type is multicolor. 
             image_files (np.ndarray, optional): Array of image filenames to load. If None, all images from the directory are loaded.
             color_dict (dict, optional): Mapping between RGB values and class labels. If None, it is assumed that labels are already in a format that can be mapped to integers.
+            class_map (dict, optional): Mapping between class ids and class names.
             background (int, optional): Identifier for the background class. If None, no background class is considered.
         """
         super().__init__(img_dir, image_files)
         self.label_dir = label_dir
         self.color_dict = color_dict
         self.background = background
+        self.class_map = class_map
 
         self.logger = logging.getLogger(self.__class__.__name__)
         if not self.logger.hasHandlers(): 
@@ -187,11 +189,13 @@ class ImageLabelDataset(ImageDataset):
                 contours_dict[class_id][1] += 1  
 
         contours_dict = {k: v for k, v in sorted(contours_dict.items())}
+        
 
         if verbose:
             self.logger.info("Contours for classes:")
             for class_id, (contours, total_count) in contours_dict.items():
-                self.logger.info(f"Class {class_id}: {len(contours)} total objects across {total_count}/{len(labels)} images.")
+                class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
+                self.logger.info(f"Class {class_name}: {len(contours)} total objects across {total_count}/{len(labels)} images.")
 
         return contours_dict
     
@@ -204,9 +208,9 @@ class ImageLabelDataset(ImageDataset):
             axs = axs.flatten()  
 
             for idx, (class_id, areas) in enumerate(object_areas.items()):
-                axs[idx].boxplot(areas, labels=[f"Class {class_id}"])
-                axs[idx].set_title(f"Class {class_id} Area Distribution")
-                axs[idx].set_ylabel("Area")
+                class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
+                axs[idx].boxplot(areas, labels=[f"Class {class_name}"])
+                axs[idx].set_title(f"Class {class_name} Area Distribution")
                 axs[idx].grid(axis="y")
 
             for idx in range(len(object_areas), len(axs)):
@@ -269,8 +273,10 @@ class ImageLabelDataset(ImageDataset):
             elip_max = max(ellipses_areas) if ellipses_areas else 0
             elip_min = min(ellipses_areas) if ellipses_areas else 0
 
+            class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
+
             print(f"------------------------------------")
-            print(f"CLASS {class_id} METRICS:")
+            print(f"CLASS {str(class_name).upper()} METRICS:")
             print(f"-----------Object metrics-----------")
             print(f"Average objects per image: {avg_class_objects_per_image:.2f}")
             print(f"Average object area: {obj_mean:.2f}")
@@ -351,14 +357,16 @@ class ImageLabelDataset(ImageDataset):
                 axs = axs.flatten()  
                 class_indices = range(len(class_ids)) 
 
+                class_labels = [self.class_map[cid] if self.class_map is not None and cid in self.class_map else str(cid) for cid in class_ids]
+
+                only_numbers = all(label.isdigit() for label in class_labels)
+
                 for idx, title in enumerate(titles):
                     axs[idx].bar(class_indices, [v[idx] for v in values])
                     axs[idx].set_title(title)
-                    axs[idx].set_xlabel("Class ID")
-                    axs[idx].set_ylabel("Value")
                     axs[idx].grid(axis="y")
                     axs[idx].set_xticks(class_indices)  
-                    axs[idx].set_xticklabels(class_ids)
+                    axs[idx].set_xticklabels(class_labels, rotation=45 if not only_numbers else 0)
  
                 for idx in range(len(titles), len(axs)):
                     axs[idx].axis("off")
@@ -408,6 +416,10 @@ class ImageLabelDataset(ImageDataset):
         labels_arr = self._labels_to_array(label_files)
 
         classes = self._get_classes_from_labels(labels_arr, verbose)
+
+        if self.class_map is not None and len(self.class_map) != len(classes):
+            print(f"Warning: {len(classes)} classes found automatically but class map contains {len(self.class_map)} entries. Provided class map won't be used.")
+            self.class_map = {}
         
         contours_dict= self._find_contours(labels_arr, verbose)
         self._compute_metrics(contours_dict, plot, output)
@@ -415,3 +427,4 @@ class ImageLabelDataset(ImageDataset):
         if verbose: 
             exection_time = time.time() - start_time
             self.logger.info(f"Total analysis time: {exection_time: .4f} seconds")
+
