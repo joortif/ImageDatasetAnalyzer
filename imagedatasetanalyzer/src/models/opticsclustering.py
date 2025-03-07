@@ -65,7 +65,7 @@ class OPTICSClustering(ClusteringBase):
                 continue
 
             score = scoring_function(valid_embeddings, valid_labels)
-            results.append((min_samples, score))
+            results.append((min_samples, score, labels))
         
         scores = [score for _, score in results]
 
@@ -91,10 +91,9 @@ class OPTICSClustering(ClusteringBase):
             else:
                 plt.show()
 
-        best_combination = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
-        best_min_samples, best_score = best_combination
+        best_min_samples, best_score, labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
 
-        return best_min_samples, best_score
+        return best_min_samples, best_score, labels
 
     def clustering(self, min_samples: int = 5, reduction: str = 'tsne', output: str = None) -> np.ndarray:
         """
@@ -120,7 +119,7 @@ class OPTICSClustering(ClusteringBase):
         return labels
     
     def select_balanced_images(self, min_samples: int, reduction: float=0.5, selection_type: str = "representative", 
-                               diverse_percentage: float = 0.1, include_outliers: bool=False, output_directory: str = None) -> ImageDataset:
+                               diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on OPTICS clustering.
         The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
@@ -136,10 +135,11 @@ class OPTICSClustering(ClusteringBase):
         Returns:
             ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
         """
-        optics = OPTICS(min_samples=min_samples)
-        labels = optics.fit_predict(self.embeddings)
+        if existing_labels is None:
+            optics = OPTICS(min_samples=min_samples)
+            existing_labels = optics.fit_predict(self.embeddings)
 
-        reduced_dataset_optics = self._select_balanced_images(labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_optics = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=include_outliers, output_directory=output_directory)
 
         return reduced_dataset_optics

@@ -47,14 +47,14 @@ class DBSCANClustering(ClusteringBase):
                 if np.all(labels == -1):
                     if verbose:
                         self.logger.warning(f"No clusters found for eps={eps}, min_samples={min_samples}. All points are noise.")
-                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
                 unique_labels = np.unique(labels)
                 if len(unique_labels) == len(self.embeddings):
                     if verbose:
                         self.logger.warning(f"Each point is assigned to its own cluster for eps={eps}, min_samples={min_samples}.")
-                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
                 valid_indices = labels != -1
@@ -64,19 +64,18 @@ class DBSCANClustering(ClusteringBase):
                 if len(np.unique(valid_labels)) == 1:
                     if verbose:
                         self.logger.warning(f"Only 1 cluster found for eps={eps}, min_samples={min_samples}. Can't calculate metric {metric.lower()}.")
-                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1))
+                    results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
                 score = scoring_function(valid_embeddings, valid_labels)
-                results.append((eps, min_samples, score))
+                results.append((eps, min_samples, score, labels))
 
-        best_combination = max(results, key=lambda x: x[2]) if metric != 'davies' else min(results, key=lambda x: x[2])
-        best_eps, best_min_samples, best_score = best_combination
+        best_eps, best_min_samples, best_score, labels = max(results, key=lambda x: x[2]) if metric != 'davies' else min(results, key=lambda x: x[2])
 
         if best_score == -1:
             if verbose:
                 self.logger.warning(f"No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
-            return best_eps, best_min_samples, best_score
+            return best_eps, best_min_samples, best_score, labels
 
         filtered_min_samples = list(min_samples_range)[:9]
         num_plots = len(filtered_min_samples)
@@ -91,7 +90,7 @@ class DBSCANClustering(ClusteringBase):
 
                 for i, ax in enumerate(axes[:num_plots]):
                     min_samples = filtered_min_samples[i]
-                    scores_for_min_samples = [(eps, score) for eps, ms, score in results if ms == min_samples]
+                    scores_for_min_samples = [(eps, score) for eps, ms, score, _ in results if ms == min_samples]
 
                     if scores_for_min_samples:
                         eps_values, scores = zip(*scores_for_min_samples)
@@ -114,7 +113,7 @@ class DBSCANClustering(ClusteringBase):
                 else:
                     plt.show()
 
-            return best_eps, best_min_samples, best_score
+            return best_eps, best_min_samples, best_score, labels
     
     def clustering(self, eps: float = 0.5, min_samples: int = 5, reduction: str = 'tsne', output: str = None) -> np.ndarray:
         """
@@ -141,7 +140,7 @@ class DBSCANClustering(ClusteringBase):
         return labels
     
     def select_balanced_images(self, eps: float, min_samples: int, reduction: float=0.5, selection_type: str = "representative", 
-                               diverse_percentage: float = 0.1, include_outliers: bool=False, output_directory: str = None) -> ImageDataset:
+                               diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on DBSCAN clustering.
         The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
@@ -158,10 +157,11 @@ class DBSCANClustering(ClusteringBase):
         Returns:
             ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
         """
-        dbscan = DBSCAN(eps=eps, min_samples=min_samples)
-        labels = dbscan.fit_predict(self.embeddings)
+        if existing_labels is None:
+            dbscan = DBSCAN(eps=eps, min_samples=min_samples)
+            existing_labels = dbscan.fit_predict(self.embeddings)
 
-        reduced_dataset_dbscan = self._select_balanced_images(labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_dbscan = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=include_outliers, output_directory=output_directory)
 
         return reduced_dataset_dbscan

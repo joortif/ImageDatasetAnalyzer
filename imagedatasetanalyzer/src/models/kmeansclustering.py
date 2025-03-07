@@ -89,9 +89,9 @@ class KMeansClustering(ClusteringBase):
             labels = kmeans.fit_predict(self.embeddings)
 
             score = scoring_function(self.embeddings, labels)
-            results.append((k, score))
+            results.append((k, score, labels))
         
-        scores = [score for _, score in results]
+        scores = [score for _, score, _ in results]
 
         if plot:
             plt.figure(figsize=(10, 7))
@@ -111,10 +111,9 @@ class KMeansClustering(ClusteringBase):
                 plt.show()
             
 
-        best_combination = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
-        best_n_clusters, best_score = best_combination
+        best_n_clusters, best_score, best_labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
 
-        return best_n_clusters, best_score
+        return best_n_clusters, best_score, best_labels
 
     def clustering(self, n_clusters: int, reduction='tsne',  output: str=None) -> np.ndarray:
         """

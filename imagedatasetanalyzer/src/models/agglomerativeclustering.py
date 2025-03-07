@@ -53,9 +53,9 @@ class AgglomerativeClustering(ClusteringBase):
                 score = scoring_function(self.embeddings, agglomerative_labels)
                 scores_by_linkage[linkage].append(score)
 
-                results.append((k, linkage, score))
+                results.append((k, linkage, score, agglomerative_labels))
 
-        best_k, best_linkage, best_score = max(results, key=lambda x: x[2]) if metric != 'davies' else min(results, key=lambda x: x[2])
+        best_k, best_linkage, best_score, best_labels = max(results, key=lambda x: x[2]) if metric != 'davies' else min(results, key=lambda x: x[2])
 
         if plot:
             plt.figure(figsize=(10, 6))
@@ -75,7 +75,7 @@ class AgglomerativeClustering(ClusteringBase):
             else:
                 plt.show()
 
-        return best_k, best_linkage, best_score
+        return best_k, best_linkage, best_score, best_labels
 
 
     def clustering(self, n_clusters: int, linkage: str, reduction='tsne', output: str=None) -> np.ndarray:
@@ -102,7 +102,7 @@ class AgglomerativeClustering(ClusteringBase):
         return labels
     
     def select_balanced_images(self, n_clusters: int, linkage: str, reduction: float=0.5, selection_type: str = "representative", 
-                               diverse_percentage: float = 0.1, output_directory: str = None) -> ImageDataset:
+                               diverse_percentage: float = 0.1, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on AgglomerativeClustering.
         The selection can be either representative (closest to centroids) or diverse (farthest from centroids).
@@ -118,10 +118,11 @@ class AgglomerativeClustering(ClusteringBase):
         Returns:
             ImageDataset: A new `ImageDataset` instance containing the reduced set of images.
         """
-        agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
-        labels = agglomerative.fit_predict(self.embeddings)
+        if existing_labels is None:
+            agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
+            existing_labels = agglomerative.fit_predict(self.embeddings)
 
-        reduced_dataset_agglomerative = self._select_balanced_images(labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_agglomerative = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=False, output_directory=output_directory)
 
         return reduced_dataset_agglomerative
