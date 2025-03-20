@@ -44,14 +44,14 @@ class OPTICSClustering(ClusteringBase):
             if np.all(labels == -1):
                 if verbose:
                     self.logger.warning(f"No clusters found for min_samples={min_samples}. All points are noise.")
-                results.append((min_samples, float('inf') if metric == 'davies' else 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
             unique_labels = np.unique(labels)
             if len(unique_labels) == len(self.embeddings):
                 if verbose:
                     self.logger.warning(f"Each point is assigned to its own cluster for min_samples={min_samples}.")
-                results.append((min_samples, float('inf') if metric == 'davies' else 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
             valid_indices = labels != -1
@@ -61,7 +61,7 @@ class OPTICSClustering(ClusteringBase):
             if len(np.unique(valid_labels)) == 1:
                 if verbose:
                     self.logger.warning(f"Only one cluster and noise cluster found for min_samples={min_samples}. Can't compute {metric.lower()} score.")
-                results.append((min_samples, float('inf') if metric == 'davies' else 0))
+                results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
             score = scoring_function(valid_embeddings, valid_labels)
@@ -118,7 +118,7 @@ class OPTICSClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, min_samples: int, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, min_samples: int=5, reduction: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on OPTICS clustering.

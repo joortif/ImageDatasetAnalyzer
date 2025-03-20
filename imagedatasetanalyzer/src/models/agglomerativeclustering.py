@@ -101,7 +101,7 @@ class AgglomerativeClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, n_clusters: int, linkage: str, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, n_clusters: int=3, linkage: str='ward', reduction: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on AgglomerativeClustering.

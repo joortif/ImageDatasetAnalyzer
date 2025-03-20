@@ -42,12 +42,9 @@ class ImageLabelDataset(ImageDataset):
         self.class_map = class_map
 
         self.logger = logging.getLogger(self.__class__.__name__)
-        if not self.logger.hasHandlers(): 
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
-            self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
+
+        self.log_file = None
 
     def _compare_directories(self, verbose):
         """
@@ -102,8 +99,8 @@ class ImageLabelDataset(ImageDataset):
             if missing_images:
                 raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
 
-        print(f"{self.img_dir} and {self.label_dir} have matching filenames.")
-        print(f"Total number of annotated images: {len(images_name)}")
+        self.logger.info(f"{self.img_dir} and {self.label_dir} have matching filenames.")
+        self.logger.info(f"Total number of annotated images: {len(images_name)}")
 
     def _labels_to_array(self, label_files):
         """
@@ -151,11 +148,11 @@ class ImageLabelDataset(ImageDataset):
 
         if verbose:
             if len(unique_classes) == 2:
-                print(f"The labels from the dataset are binary.")
+                self.logger.info(f"The labels from the dataset are binary.")
             else:
-                print(f"The labels from the dataset are multiclass.")
+                self.logger.info(f"The labels from the dataset are multiclass.")
         
-        print(f"{len(unique_classes)} classes found from dataset labels: {unique_classes}")
+        self.logger.info(f"{len(unique_classes)} classes found from dataset labels: {unique_classes}")
         return unique_classes
     
     def _find_contours(self, labels, verbose):
@@ -221,7 +218,7 @@ class ImageLabelDataset(ImageDataset):
             if output:
                 boxplot_path = os.path.join(output, "object_areas_boxplot.png")
                 plt.savefig(boxplot_path, format='png')
-                print(f"Boxplot saved to {boxplot_path}")
+                self.logger.info(f"Boxplot saved to {boxplot_path}")
                 plt.close()
             else:
                 plt.show()
@@ -275,25 +272,25 @@ class ImageLabelDataset(ImageDataset):
 
             class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
 
-            print(f"------------------------------------")
-            print(f"CLASS {str(class_name).upper()} METRICS:")
-            print(f"-----------Object metrics-----------")
-            print(f"Average objects per image: {avg_class_objects_per_image:.2f}")
-            print(f"Average object area: {obj_mean:.2f}")
-            print(f"Standard deviation of object area: {obj_std:.2f}")
-            print(f"Max object area: {obj_max:.2f}")
-            print(f"Min object area: {obj_min:.2f}")
-            print(f"-----------Bounding boxes metrics-----------")
-            print(f"Average bounding box area: {bb_mean:.2f}")
-            print(f"Standard deviation of bounding box area: {bb_std:.2f}")
-            print(f"Max bounding box area: {bb_max:.2f}")
-            print(f"Min bounding box area: {bb_min:.2f}")
-            print(f"-----------Ellipses metrics-----------")
-            print(f"Average ellipse area: {elip_mean:.2f}")
-            print(f"Standard deviation of ellipse area: {elip_std:.2f}")
-            print(f"Max ellipse area: {elip_max:.2f}")
-            print(f"Min ellipse area: {elip_min:.2f}")
-            print("\n")
+            self.logger.info(f"------------------------------------")
+            self.logger.info(f"CLASS {str(class_name).upper()} METRICS:")
+            self.logger.info(f"-----------Object metrics-----------")
+            self.logger.info(f"Average objects per image: {avg_class_objects_per_image:.2f}")
+            self.logger.info(f"Average object area: {obj_mean:.2f}")
+            self.logger.info(f"Standard deviation of object area: {obj_std:.2f}")
+            self.logger.info(f"Max object area: {obj_max:.2f}")
+            self.logger.info(f"Min object area: {obj_min:.2f}")
+            self.logger.info(f"-----------Bounding boxes metrics-----------")
+            self.logger.info(f"Average bounding box area: {bb_mean:.2f}")
+            self.logger.info(f"Standard deviation of bounding box area: {bb_std:.2f}")
+            self.logger.info(f"Max bounding box area: {bb_max:.2f}")
+            self.logger.info(f"Min bounding box area: {bb_min:.2f}")
+            self.logger.info(f"-----------Ellipses metrics-----------")
+            self.logger.info(f"Average ellipse area: {elip_mean:.2f}")
+            self.logger.info(f"Standard deviation of ellipse area: {elip_std:.2f}")
+            self.logger.info(f"Max ellipse area: {elip_max:.2f}")
+            self.logger.info(f"Min ellipse area: {elip_min:.2f}")
+            self.logger.info("\n")
 
             class_ids.append(class_id)
             metrics["object"].append([
@@ -317,7 +314,7 @@ class ImageLabelDataset(ImageDataset):
             ])
 
         if len(class_ids) <= 1:
-            print("Metrics won't be plotted since the dataset has only one class.")
+            self.logger.info("Metrics won't be plotted since the dataset has only one class.")
             plot=False
 
         if plot:
@@ -375,7 +372,7 @@ class ImageLabelDataset(ImageDataset):
                 if output:  
                     output_path = os.path.join(output, f"{metric_type}_metrics.png")
                     plt.savefig(output_path, format='png')
-                    print(f"Plot saved to {output_path}")
+                    self.logger.info(f"Plot saved to {output_path}")
                     plt.close()
                 else:
                     plt.show()
@@ -393,8 +390,29 @@ class ImageLabelDataset(ImageDataset):
             None: Outputs various metrics and insights about the dataset to the console.
         """
 
+        if output is None:
+            output = os.getcwd()
+        os.makedirs(output, exist_ok=True)
+
+        log_path = os.path.join(output, "results.txt")
+        self.log_file = log_path
+
+        for handler in self.logger.handlers[:]:
+            if isinstance(handler, logging.FileHandler):
+                self.logger.removeHandler(handler)
+
+        file_handler = logging.FileHandler(log_path, mode='w')
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
+        self.logger.addHandler(file_handler)
+
+        if verbose:
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
+            self.logger.addHandler(console_handler)
+
         if verbose:
             start_time = time.time()
+            self.logger.info(f"Starting dataset analysis. Saving log to {log_path}")
 
         self._compare_directories(verbose=verbose)
 
@@ -407,18 +425,18 @@ class ImageLabelDataset(ImageDataset):
             if os.path.exists(label_file):  
                 label_files.append(label_file)
 
-        print("Image sizes: ")
-        self._image_sizes(self.img_dir, self.image_files)
+        self.logger.info("Image sizes: ")
+        self._image_sizes(self.img_dir, self.image_files, self.logger)
         
-        print("Label sizes: ")
-        self._image_sizes(self.label_dir, label_files)
+        self.logger.info("Label sizes: ")
+        self._image_sizes(self.label_dir, label_files, self.logger)
 
         labels_arr = self._labels_to_array(label_files)
 
         classes = self._get_classes_from_labels(labels_arr, verbose)
 
-        if self.class_map is not None and len(self.class_map) != len(classes):
-            print(f"Warning: {len(classes)} classes found automatically but class map contains {len(self.class_map)} entries. Provided class map won't be used.")
+        if self.class_map is not None and len(self.class_map) != 0 and len(self.class_map) != len(classes):
+            self.logger.info(f"Warning: {len(classes)} classes found automatically but class map contains {len(self.class_map)} entries. Provided class map won't be used.")
             self.class_map = {}
         
         contours_dict= self._find_contours(labels_arr, verbose)

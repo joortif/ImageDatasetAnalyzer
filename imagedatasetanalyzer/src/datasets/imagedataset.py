@@ -1,5 +1,6 @@
 from collections import defaultdict
 import os
+import logging
 
 from torch.utils.data import Dataset
 
@@ -61,7 +62,7 @@ class ImageDataset(Dataset):
         return image
 
 
-    def _image_sizes(self, directory, files): 
+    def _image_sizes(self, directory, files, logger): 
         """
         Returns the sizes of the images in the directory.
         """
@@ -79,9 +80,9 @@ class ImageDataset(Dataset):
         for size, count in images_sizes.items():
             width, height = size
             percentage = (count / len(files)) * 100
-            print(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
+            logger.info(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
     
-    def analyze(self):
+    def analyze(self, verbose=False, log_dir=None):
         """
         Analyzes the image dataset reporting the distribution of image sizes.
 
@@ -89,5 +90,25 @@ class ImageDataset(Dataset):
         and prints the report to the console.
         """
         
-        self._image_sizes(self.img_dir, self.image_files)
-        print(f"Total number of images in the dataset: {len(self.image_files)}")
+        self.logger = logging.getLogger(self.__class__.__name__)
+        
+        if not self.logger.hasHandlers():
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
+
+            if not log_dir:
+                log_dir = os.getcwd()
+
+            file_handler = logging.FileHandler(os.path.join(log_dir, "results.txt"), mode='w')
+            file_handler.setFormatter(formatter)
+            self.logger.addHandler(file_handler)
+                
+            if verbose:
+                stream_handler = logging.StreamHandler()
+                stream_handler.setFormatter(formatter)
+                self.logger.addHandler(stream_handler)
+
+            self.logger.setLevel(logging.INFO)
+
+        self.logger.info("Analyzing dataset...")
+        self._image_sizes(self.img_dir, self.image_files, self.logger)
+        self.logger.info(f"Total number of images in the dataset: {len(self.image_files)}")

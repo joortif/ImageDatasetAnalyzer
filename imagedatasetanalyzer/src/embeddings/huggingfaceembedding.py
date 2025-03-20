@@ -2,6 +2,7 @@ from transformers import AutoModel, AutoProcessor
 from torch.utils.data import DataLoader
 import torch
 from tqdm import tqdm
+import numpy as np
 
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 from imagedatasetanalyzer.src.embeddings.embedding import Embedding
@@ -83,6 +84,6 @@ class HuggingFaceEmbedding(Embedding):
                 else:
                     outputs = self.model(pixel_values=batch).last_hidden_state[:, 0]
 
-            embeddings.append(outputs.cpu())
+            embeddings.append(outputs.cpu().numpy())
 
-        return torch.cat(embeddings)
+        return np.concatenate(embeddings, axis=0)

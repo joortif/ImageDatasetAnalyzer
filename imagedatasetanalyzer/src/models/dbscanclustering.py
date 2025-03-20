@@ -139,7 +139,7 @@ class DBSCANClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, eps: float, min_samples: int, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, eps: float=0.5, min_samples: int=5, reduction: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on DBSCAN clustering.

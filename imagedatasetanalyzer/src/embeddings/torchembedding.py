@@ -2,6 +2,7 @@ from torchvision import models
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import numpy as np
 
 from imagedatasetanalyzer.src.embeddings.embedding import Embedding
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
@@ -82,7 +83,7 @@ class PyTorchEmbedding(Embedding):
                 if len(outputs.shape) == 4:
                     outputs = outputs.mean(dim=[2, 3])
 
-                embeddings.append(outputs.squeeze().cpu())
+                embeddings.append(outputs.squeeze().cpu().numpy())
             
-        return torch.cat(embeddings)
+        return np.concatenate(embeddings, axis=0)
         

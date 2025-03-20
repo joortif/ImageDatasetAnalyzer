@@ -113,7 +113,7 @@ class KMeansClustering(ClusteringBase):
 
         best_n_clusters, best_score, best_labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
 
-        return best_n_clusters, best_score, best_labels
+        return best_n_clusters, self.random_state, best_score, best_labels
 
     def clustering(self, n_clusters: int, reduction='tsne',  output: str=None) -> np.ndarray:
         """
@@ -138,7 +138,7 @@ class KMeansClustering(ClusteringBase):
         
         return labels
     
-    def select_balanced_images(self, n_clusters: int, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, n_clusters: int=3, reduction: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on KMeans clustering and its centroids.
