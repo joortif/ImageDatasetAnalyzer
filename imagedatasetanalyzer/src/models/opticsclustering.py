@@ -67,7 +67,7 @@ class OPTICSClustering(ClusteringBase):
             score = scoring_function(valid_embeddings, valid_labels)
             results.append((min_samples, score, labels))
         
-        scores = [score for _, score in results]
+        scores = [score for _, score, _ in results]
 
         if all(score == 0 for score in scores) or all(score == float('inf') for score in scores):
             if verbose:
@@ -88,8 +88,7 @@ class OPTICSClustering(ClusteringBase):
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
                 plt.close()
-            else:
-                plt.show()
+
 
         best_min_samples, best_score, labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
 

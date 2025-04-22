@@ -1,6 +1,7 @@
 from collections import defaultdict
 import os
 import logging
+from tqdm import tqdm
 
 from torch.utils.data import Dataset
 
@@ -19,19 +20,19 @@ class ImageDataset(Dataset):
         img_dir (str): Path to the directory containing the images.
         image_files (np.ndarray): List of image filenames in the directory. If not provided, all images in the directory will be included.
     """
-    def __init__(self, image_dir: str, image_files: np.ndarray=None):
+    def __init__(self, img_dir: str, image_files: np.ndarray=None):
         """
         Args:
             directory (str): Directory containing images.
             image_files (array, optional): Images to save from the directory. If None, all the images from the directory are saved.
         """
 
-        self.img_dir = image_dir
+        self.img_dir = img_dir
 
         self.image_files = image_files
         
         if not self.image_files:
-            self.image_files = [f for f in os.listdir(image_dir) if f.endswith(('jpg', 'png'))]
+            self.image_files = [f for f in os.listdir(img_dir) if f.endswith(('jpg', 'png'))]
 
     def __len__(self):
         return len(self.image_files)
@@ -67,7 +68,7 @@ class ImageDataset(Dataset):
         Returns the sizes of the images in the directory.
         """
         images_sizes = defaultdict(int)
-        for fname in files:
+        for fname in tqdm(files, desc="Reading files"):
             fpath = os.path.join(directory, fname)
             with Image.open(fpath) as img:
                 size = img.size
@@ -98,7 +99,7 @@ class ImageDataset(Dataset):
             if not log_dir:
                 log_dir = os.getcwd()
 
-            file_handler = logging.FileHandler(os.path.join(log_dir, "results.txt"), mode='w')
+            file_handler = logging.FileHandler(os.path.join(log_dir, "logs.txt"), mode='w')
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
                 
@@ -109,6 +110,6 @@ class ImageDataset(Dataset):
 
             self.logger.setLevel(logging.INFO)
 
-        self.logger.info("Analyzing dataset...")
+        self.logger.info("Calculating image sizes...")
         self._image_sizes(self.img_dir, self.image_files, self.logger)
         self.logger.info(f"Total number of images in the dataset: {len(self.image_files)}")

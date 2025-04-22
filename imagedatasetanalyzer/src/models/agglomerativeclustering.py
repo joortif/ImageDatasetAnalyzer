@@ -72,8 +72,6 @@ class AgglomerativeClustering(ClusteringBase):
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
                 plt.close()
-            else:
-                plt.show()
 
         return best_k, best_linkage, best_score, best_labels
 

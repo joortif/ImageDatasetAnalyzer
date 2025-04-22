@@ -110,10 +110,9 @@ class DBSCANClustering(ClusteringBase):
                     plt.savefig(output, format='png')
                     print(f"Plot saved to {output}")
                     plt.close()
-                else:
-                    plt.show()
 
-            return best_eps, best_min_samples, best_score, labels
+
+        return best_eps, best_min_samples, best_score, labels
     
     def clustering(self, eps: float = 0.5, min_samples: int = 5, reduction: str = 'tsne', output: str = None) -> np.ndarray:
         """

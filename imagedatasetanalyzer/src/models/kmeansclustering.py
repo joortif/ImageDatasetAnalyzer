@@ -59,8 +59,7 @@ class KMeansClustering(ClusteringBase):
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
                 plt.close()
-            else:
-                plt.show()
+
         
         knee_locator = KneeLocator(interval, inertia_values, curve="convex", direction="decreasing")
         best_k = knee_locator.knee
@@ -107,8 +106,7 @@ class KMeansClustering(ClusteringBase):
                 plt.savefig(output, format='png')
                 print(f"Plot saved to {output}")
                 plt.close()
-            else:
-                plt.show()
+
             
 
         best_n_clusters, best_score, best_labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])

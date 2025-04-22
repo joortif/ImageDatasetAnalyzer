@@ -1,6 +1,8 @@
 import logging
 import os
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
 from PIL import Image
 import cv2
@@ -139,7 +141,7 @@ class ImageLabelDataset(ImageDataset):
         
         unique_classes = set()
 
-        for img_arr in labels:
+        for img_arr in tqdm(labels, desc="Reading labels"):
             if img_arr.ndim == 2:                               #Multilabel or binary label
                 unique_classes.update(np.unique(img_arr))
                     
@@ -220,9 +222,37 @@ class ImageLabelDataset(ImageDataset):
                 plt.savefig(boxplot_path, format='png')
                 self.logger.info(f"Boxplot saved to {boxplot_path}")
                 plt.close()
-            else:
-                plt.show()
     
+    
+    def _save_metrics_csv(self, metrics, output):
+        columns = [
+            "Class name",
+            "Total objects",
+            "Num. images with objects",
+            "Avg. objects per image", 
+            "Avg. object area", 
+            "Std. Dev. object area", 
+            "Max object area", 
+            "Min object area",
+            "Avg. bounding box area", 
+            "Std. Dev. bounding box area", 
+            "Max bounding box area", 
+            "Min bounding box area",
+            "Avg. ellipse area", 
+            "Std. Dev. ellipse area", 
+            "Max ellipse area", 
+            "Min ellipse area"
+        ]
+
+        df = pd.DataFrame(metrics, columns=columns)
+
+        output_path = os.path.join(output, "metrics.csv")
+
+        df.to_csv(output_path, index=False, sep=";", decimal=",")
+        self.logger.info(f"Metrics saved to CSV at {output_path}")
+
+        return
+
 
     def _compute_metrics(self, contours: dict, plot: bool=True, output: str=None):
         """
@@ -238,7 +268,10 @@ class ImageLabelDataset(ImageDataset):
         class_ids = []
         object_areas_by_class = {}
 
+        csv_data = []
+
         for class_id, (class_contours, num_images) in contours.items():
+            total_objects = len(class_contours)
             avg_class_objects_per_image = len(class_contours) / num_images
 
             areas = [cv2.contourArea(contour) for contour in class_contours]
@@ -255,15 +288,15 @@ class ImageLabelDataset(ImageDataset):
                     ellipse_area = np.pi * (major_axis / 2) * (minor_axis / 2)  
                     ellipses_areas.append(ellipse_area)
 
-            obj_mean = np.mean(areas)
-            obj_std = np.std(areas)
-            obj_max = max(areas)
-            obj_min = min(areas)
+            obj_mean = np.mean(areas) if areas else 0
+            obj_std = np.std(areas) if areas else 0
+            obj_max = max(areas) if areas else 0
+            obj_min = min(areas) if areas else 0
 
-            bb_mean = np.mean(bounding_boxes_areas)
-            bb_std = np.mean(bounding_boxes_areas)
-            bb_max = max(bounding_boxes_areas)
-            bb_min = min(bounding_boxes_areas)
+            bb_mean = np.mean(bounding_boxes_areas) if bounding_boxes_areas else 0
+            bb_std = np.std(bounding_boxes_areas) if bounding_boxes_areas else 0
+            bb_max = max(bounding_boxes_areas) if bounding_boxes_areas else 0
+            bb_min = min(bounding_boxes_areas) if bounding_boxes_areas else 0
 
             elip_mean = np.mean(ellipses_areas) if ellipses_areas else 0
             elip_std = np.std(ellipses_areas) if ellipses_areas else 0
@@ -292,6 +325,27 @@ class ImageLabelDataset(ImageDataset):
             self.logger.info(f"Min ellipse area: {elip_min:.2f}")
             self.logger.info("\n")
 
+            csv_data.append([
+                class_name, 
+                total_objects,
+                num_images,
+                f"{avg_class_objects_per_image:.2f}".replace('.', ','), 
+                f"{obj_mean:.2f}".replace('.', ','), 
+                f"{obj_std:.2f}".replace('.', ','), 
+                f"{obj_max:.2f}".replace('.', ','), 
+                f"{obj_min:.2f}".replace('.', ','),
+
+                f"{bb_mean:.2f}".replace('.', ','), 
+                f"{bb_std:.2f}".replace('.', ','), 
+                f"{bb_max:.2f}".replace('.', ','), 
+                f"{bb_min:.2f}".replace('.', ','),
+
+                f"{elip_mean:.2f}".replace('.', ','), 
+                f"{elip_std:.2f}".replace('.', ','), 
+                f"{elip_max:.2f}".replace('.', ','), 
+                f"{elip_min:.2f}".replace('.', ',')
+            ])
+
             class_ids.append(class_id)
             metrics["object"].append([
                 avg_class_objects_per_image, 
@@ -313,9 +367,11 @@ class ImageLabelDataset(ImageDataset):
                 elip_min
             ])
 
+        self._save_metrics_csv(csv_data, output)
+
         if len(class_ids) <= 1:
             self.logger.info("Metrics won't be plotted since the dataset has only one class.")
-            plot=False
+            return
 
         if plot:
             metrics_titles = {
@@ -374,8 +430,6 @@ class ImageLabelDataset(ImageDataset):
                     plt.savefig(output_path, format='png')
                     self.logger.info(f"Plot saved to {output_path}")
                     plt.close()
-                else:
-                    plt.show()
 
 
     def analyze(self, plot: bool=True, output: str=None, verbose: bool=False):
@@ -394,7 +448,7 @@ class ImageLabelDataset(ImageDataset):
             output = os.getcwd()
         os.makedirs(output, exist_ok=True)
 
-        log_path = os.path.join(output, "results.txt")
+        log_path = os.path.join(output, "logs.txt")
         self.log_file = log_path
 
         for handler in self.logger.handlers[:]:
@@ -425,10 +479,10 @@ class ImageLabelDataset(ImageDataset):
             if os.path.exists(label_file):  
                 label_files.append(label_file)
 
-        self.logger.info("Image sizes: ")
+        self.logger.info("Calculating image sizes...")
         self._image_sizes(self.img_dir, self.image_files, self.logger)
         
-        self.logger.info("Label sizes: ")
+        self.logger.info("Calculating label sizes...")
         self._image_sizes(self.label_dir, label_files, self.logger)
 
         labels_arr = self._labels_to_array(label_files)

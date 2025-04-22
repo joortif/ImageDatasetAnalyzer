@@ -108,8 +108,7 @@ class ClusteringBase():
             plt.savefig(output, bbox_inches='tight')
             print(f"Plot saved to {output}")
             plt.close()
-        else:
-            plt.show()
+
 
     def show_cluster_images(self, cluster_id: int, labels: np.ndarray, images_to_show: int=9, images_per_row: int=3, output: str=None) -> None:
         """
@@ -155,8 +154,6 @@ class ClusteringBase():
                 plt.savefig(output, bbox_inches='tight')
                 print(f"Plot saved to {output}")
                 plt.close()
-            else:
-                plt.show()
 
             return
 
@@ -181,8 +178,6 @@ class ClusteringBase():
             plt.savefig(output, bbox_inches='tight')
             print(f"Plot saved to {output}")
             plt.close()
-        else:
-            plt.show()
 
 
     def _calculate_medoids(self, embeddings=np.ndarray, labels=np.ndarray):
