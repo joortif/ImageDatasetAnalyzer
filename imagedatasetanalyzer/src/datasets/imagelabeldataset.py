@@ -65,44 +65,32 @@ class ImageLabelDataset(ImageDataset):
         images_files = os.listdir(self.img_dir)
         labels_files = os.listdir(self.label_dir)
 
-        images_name = {os.path.splitext(file)[0] for file in os.listdir(self.img_dir)}
-        labels_name = {os.path.splitext(file)[0] for file in os.listdir(self.label_dir)}
+        image_names = {os.path.splitext(file)[0] for file in os.listdir(self.img_dir)}
+        label_names = {os.path.splitext(file)[0] for file in os.listdir(self.label_dir)}
 
-        if len(images_name) != len(images_files):
+        if len(image_names) != len(images_files):
             self.logger.warning(f"Warning: There are duplicate filenames in {self.img_dir}.")
 
-        if len(labels_name) != len(labels_files):
+        if len(label_names) != len(labels_files):
             self.logger.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
 
-        if images_name != labels_name:
-            differing_files = images_name.symmetric_difference(labels_name)
-            if verbose:
-                for file in differing_files:
-                    self.logger.warning(f"Filename mismatch: {file} found in one directory but not the other.")
-            raise ValueError(f"Filename mismatch between {self.img_dir} and {self.label_dir}. Mismatched files: {differing_files}")
-        
-        if len(images_name) > len(labels_name):
-            missing_masks = images_name - labels_name
+        missing_masks = image_names - label_names
+        missing_images = label_names - image_names
 
+        if missing_masks:
             if verbose:
-                for missing_mask in missing_masks:
-                    self.logger.warning(f"Image {missing_mask} in {self.img_dir} does not have a mask in {self.label_dir}")
-            
-            if missing_masks:
-                raise FileNotFoundError(f"Missing masks for the following images: {missing_masks}")
+                for name in missing_masks:
+                    self.logger.warning(f"Image '{name}' in {self.img_dir} does not have a corresponding mask in {self.label_dir}")
+            raise FileNotFoundError(f"Missing masks for the following images: {missing_masks}")
 
-        if len(labels_name) > len(images_name):
-            missing_images = labels_name - images_name
-
+        if missing_images:
             if verbose:
-                for missing_image in missing_images:
-                    self.logger.warning(f"Mask {missing_image} in {self.label_dir} does not have an image in {self.img_dir}")
-            
-            if missing_images:
-                raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
+                for name in missing_images:
+                    self.logger.warning(f"Mask '{name}' in {self.label_dir} does not have a corresponding image in {self.img_dir}")
+            raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
 
         self.logger.info(f"{self.img_dir} and {self.label_dir} have matching filenames.")
-        self.logger.info(f"Total number of annotated images: {len(images_name)}")
+        self.logger.info(f"Total number of annotated images: {len(image_names)}")
 
     def _labels_to_array(self, label_files):
         """

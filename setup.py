@@ -78,7 +78,7 @@ if sys.platform in ['win32', 'cygwin', 'windows']:
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.2.8',
+    version = '0.2.10',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',
@@ -111,7 +111,6 @@ setup(
         'Topic :: Scientific/Engineering :: Image Recognition',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
 
-        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
 

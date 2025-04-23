@@ -48,7 +48,7 @@ class HuggingFaceEmbedding(Embedding):
         """
         images = [image.convert("RGB") for image in batch]
         processed = self.processor(images=images, return_tensors="pt")
-        inputs = processed.get("pixel_values", images).squeeze(0)
+        inputs = processed["pixel_values"]
         return inputs
 
     def generate_embeddings(self, dataset: ImageDataset, device: torch.device = None):
@@ -84,6 +84,7 @@ class HuggingFaceEmbedding(Embedding):
                 else:
                     outputs = self.model(pixel_values=batch).last_hidden_state[:, 0]
 
+                    
             embeddings.append(outputs.cpu().numpy())
 
         return np.concatenate(embeddings, axis=0)
