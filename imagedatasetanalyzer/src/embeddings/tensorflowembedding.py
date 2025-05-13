@@ -1,10 +1,11 @@
+import re
+
 import tensorflow as tf
 
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 
-import re
 import torch
 import numpy as np
 
@@ -97,8 +98,8 @@ class TensorflowEmbedding(Embedding):
             
             preprocess_input = model_module.preprocess_input
             return model, preprocess_input
-        except AttributeError:
-            raise ValueError(f"Model {self.model_name} not supported or not found in tensorflow.keras.applications.")
+        except AttributeError as exc:
+            raise ValueError(f"Model {self.model_name} not supported or not found in tensorflow.keras.applications.") from exc
         
     def _transform_image(self, batch) -> torch.Tensor:
         """

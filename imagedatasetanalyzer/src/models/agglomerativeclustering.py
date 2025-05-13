@@ -21,7 +21,6 @@ class AgglomerativeClustering(ClusteringBase):
         embeddings (np.ndarray): Feature embeddings for each image.
         random_state (int): Random seed used for reproducibility.
     """
-
     def find_best_agglomerative_clustering(self, n_clusters_range: range, metric: str='silhouette', linkages=None, plot=True, output: str=None) -> tuple: 
         """
         Evaluates Agglomerative Clustering using the specified metric.
@@ -36,7 +35,6 @@ class AgglomerativeClustering(ClusteringBase):
         Returns:
             tuple: The best number of clusters, the best linkage method, and the best score.
         """
-
         if not linkages:
             linkages = ['ward','complete','average','single']
 
@@ -90,8 +88,8 @@ class AgglomerativeClustering(ClusteringBase):
         Returns:
             array: Cluster labels assigned by KMeans for each data point.
         """
-        aggClusteringModel = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
-        labels = aggClusteringModel.fit_predict(self.embeddings)
+        agg_clustering_model = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
+        labels = agg_clustering_model.fit_predict(self.embeddings)
 
         embeddings_2d = self.reduce_dimensions(reduction)
 
@@ -122,5 +120,4 @@ class AgglomerativeClustering(ClusteringBase):
 
         reduced_dataset_agglomerative = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=False, output_directory=output_directory)
-
         return reduced_dataset_agglomerative

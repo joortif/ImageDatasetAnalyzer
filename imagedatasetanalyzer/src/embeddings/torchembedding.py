@@ -67,23 +67,17 @@ class PyTorchEmbedding(Embedding):
             else:
                 print("Device not detected. Using CPU.")
                 
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
-        
+        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))        
         embeddings = []
-
         self.model.to(device)
         
         for batch in tqdm(dataloader, desc="Generating embeddings..."):
-
             batch = batch.to(device)
-
             with torch.no_grad():
                 outputs = self.model(batch)
-
                 if len(outputs.shape) == 4:
                     outputs = outputs.mean(dim=[2, 3])
 
                 embeddings.append(outputs.squeeze().cpu().numpy())
             
         return np.concatenate(embeddings, axis=0)
-        

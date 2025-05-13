@@ -1,17 +1,17 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import random
+import logging
+import shutil
+from typing import Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 from scipy.spatial.distance import cdist
-
-import logging
 
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
-
-import shutil
 
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
 
@@ -235,8 +235,8 @@ class ClusteringBase():
 
         return np.unique(np.concatenate((selected_images, diverse_images)))
 
-    def _select_balanced_images(self, labels: np.ndarray, cluster_centers: np.ndarray | None, reduction: float, selection_type: str,
-                               diverse_percentage: float, include_outliers: bool, output_directory: str):
+    def _select_balanced_images(self, labels: np.ndarray, reduction: float, selection_type: str,
+                               diverse_percentage: float, include_outliers: bool, output_directory: str, cluster_centers:  Optional[np.ndarray] = None):
         """
         Selects a balanced subset of images.
 

@@ -1,7 +1,6 @@
-from kneed import KneeLocator
-
 import os
 
+from kneed import KneeLocator
 from sklearn.cluster import KMeans
 
 import matplotlib.pyplot as plt

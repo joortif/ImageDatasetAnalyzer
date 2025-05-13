@@ -1,10 +1,11 @@
+from typing import Optional
+
 import cv2
 from skimage.feature import local_binary_pattern
 from tqdm import tqdm
 import numpy as np
 from torch.utils.data import DataLoader
 import torch
-
 
 from imagedatasetanalyzer.src.embeddings.embedding import Embedding
 from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
@@ -23,9 +24,8 @@ class OpenCVLBPEmbedding(Embedding):
         method (str): The LBP method (e.g., 'uniform').
         resize_height (int | None): The height to resize images to (optional).
         resize_width (int | None): The width to resize images to (optional).
-    """
-    
-    def __init__(self, radius: int, num_points: int, resize_height: int | None=None, resize_width: int | None=None, batch_size: int = 8, method: str="uniform"):
+    """    
+    def __init__(self, radius: int, num_points: int, resize_height:  Optional[int] = None, resize_width: Optional[int] = None, batch_size: int = 8, method: str="uniform"):
         """
         Args:
             radius (int): The radius of the LBP neighborhood.
@@ -35,7 +35,6 @@ class OpenCVLBPEmbedding(Embedding):
             batch_size (int, optional): The number of images to process in each batch. Defaults to 8.
             method (str, optional): The LBP method to use (e.g., 'uniform'). Defaults to 'uniform'.
         """
-        
         self.radius = radius
         self.num_points = num_points
         self.batch_size = batch_size
@@ -52,11 +51,8 @@ class OpenCVLBPEmbedding(Embedding):
 
         Returns:
             torch.Tensor: Processed tensor ready for model input.
-        """
-        
-
+        """        
         images = [np.array(image.convert("RGB")) for image in batch]        
-        
         if self.resize_height and self.resize_width:
             images = [cv2.resize(image, (self.resize_width, self.resize_height)) for image in images]
 
@@ -64,7 +60,6 @@ class OpenCVLBPEmbedding(Embedding):
         gray_images = np.array([cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) for image in images])
 
         return gray_images
-
 
     def generate_embeddings(self, dataset: ImageDataset) -> np.ndarray:
         """
@@ -81,9 +76,7 @@ class OpenCVLBPEmbedding(Embedding):
         embeddings = []
 
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
-
         for batch in tqdm(dataloader, "Generating embeddings..."):
-
             for gray_image in batch:
                 lbp = local_binary_pattern(gray_image, self.num_points, self.radius, self.method)
 
@@ -95,6 +88,4 @@ class OpenCVLBPEmbedding(Embedding):
                 hist = hist.astype("float") / hist.sum()
                 embeddings.append(hist)
 
-
         return np.array(embeddings)
-            

@@ -28,11 +28,11 @@ class ImageDataset(Dataset):
         """
 
         self.img_dir = img_dir
-
-        self.image_files = image_files
-        
+        self.image_files = image_files        
         if not self.image_files:
             self.image_files = [f for f in os.listdir(img_dir) if f.endswith(('jpg', 'png'))]
+
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def __len__(self):
         return len(self.image_files)
@@ -58,7 +58,7 @@ class ImageDataset(Dataset):
         try:
             image = Image.open(image_path).convert("RGB")
         except Exception as e:
-            raise RuntimeError(f"Error loading image {image_path}: {e}")
+            raise RuntimeError(f"Error loading image {image_path}: {e}") from e
 
         return image
 
@@ -91,8 +91,6 @@ class ImageDataset(Dataset):
         and prints the report to the console.
         """
         
-        self.logger = logging.getLogger(self.__class__.__name__)
-        
         if not self.logger.hasHandlers():
             formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
@@ -112,4 +110,4 @@ class ImageDataset(Dataset):
 
         self.logger.info("Calculating image sizes...")
         self._image_sizes(self.img_dir, self.image_files, self.logger)
-        self.logger.info(f"Total number of images in the dataset: {len(self.image_files)}")
+        self.logger.info("Total number of images in the dataset: %s", len(self.image_files))
