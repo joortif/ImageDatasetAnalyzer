@@ -1,13 +1,14 @@
-from collections import defaultdict
 import os
-import logging
-from tqdm import tqdm
-
+import torch
 from torch.utils.data import Dataset
-
 import numpy as np
 from PIL import Image
 
+from collections import defaultdict
+import logging
+from tqdm import tqdm
+
+from imagedatasetanalyzer.src.utils.metrics import compute_LPIPS, compute_SSIM
 
 class ImageDataset(Dataset):
     """
@@ -62,7 +63,6 @@ class ImageDataset(Dataset):
 
         return image
 
-
     def _image_sizes(self, directory, files, logger): 
         """
         Returns the sizes of the images in the directory.
@@ -82,13 +82,43 @@ class ImageDataset(Dataset):
             width, height = size
             percentage = (count / len(files)) * 100
             logger.info(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
+
+    def _dataset_similarity(self, similarity_index, logger):
+
+        if not similarity_index:
+            return
+        
+        similarity_index = [idx.strip().upper() for idx in similarity_index]
+        valid_indices = {"SSIM", "LPIPS"}
+        selected_indices = [idx for idx in similarity_index if idx in valid_indices]
+
+        if not selected_indices:
+            logger.warning("No valid similarity index selected. Supported options: SSIM, LPIPS.")
+            return
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        if device.type == "cpu":
+            logger.warning("Similarity analysis using SSIM or LPIPS can be computationally expensive on CPU. Please use a machine with a CUDA-compatible GPU.")
+            return
+            
+        logger.info("Computing similarity indices for the dataset")
+        for index in selected_indices:
+            if index == "SSIM":
+                ssim_mean, ssim_std, _ = compute_SSIM(self.img_dir, device)
+                logger.info("Dataset SSIM Index: %.4f, Std Dev: %.4f", ssim_mean, ssim_std)
+            elif index == "LPIPS":
+                lpips_mean, lpips_std, _ = compute_LPIPS(self.img_dir, device)
+                logger.info("Dataset LPIPS Index: %.4f, Std Dev: %.4f", lpips_mean, lpips_std)
+
     
-    def analyze(self, verbose=False, log_dir=None):
+    def analyze(self, similarity_index=["SSIM","LPIPS"], verbose=False, log_dir=None):
         """
         Analyzes the image dataset reporting the distribution of image sizes.
 
         This method calculates the frequency of each unique image size in the dataset
-        and prints the report to the console.
+        and prints the report to the console. It also calculates SSIM or LPIPS similarity indexes
+        from all the dataset optionally.
         """
         
         if not self.logger.hasHandlers():
@@ -111,3 +141,5 @@ class ImageDataset(Dataset):
         self.logger.info("Calculating image sizes...")
         self._image_sizes(self.img_dir, self.image_files, self.logger)
         self.logger.info("Total number of images in the dataset: %s", len(self.image_files))
+
+        self._dataset_similarity(similarity_index, self.logger)

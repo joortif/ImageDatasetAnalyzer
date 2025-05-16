@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import List
 import numpy as np
 import time
 
@@ -419,7 +420,7 @@ class ImageLabelDataset(ImageDataset):
                     plt.close()
 
 
-    def analyze(self, plot: bool=True, output: str=None, verbose: bool=False):
+    def analyze(self, plot: bool=True, similarity_index: List[str]=["SSIM", "LPIPS"], output: str=None, verbose: bool=False):
         """
         Analyzes the dataset of images and corresponding labels to extract metrics and insights.
 
@@ -471,6 +472,8 @@ class ImageLabelDataset(ImageDataset):
         
         self.logger.info("Calculating label sizes...")
         self._image_sizes(self.label_dir, label_files, self.logger)
+
+        self._dataset_similarity(similarity_index, self.logger)
 
         labels_arr = self._labels_to_array(label_files)
 
