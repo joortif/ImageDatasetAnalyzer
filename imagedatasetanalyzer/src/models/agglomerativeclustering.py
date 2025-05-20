@@ -118,6 +118,6 @@ class AgglomerativeClustering(ClusteringBase):
             agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
             existing_labels = agglomerative.fit_predict(self.embeddings)
 
-        reduced_dataset_agglomerative = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_agglomerative = self._select_balanced_images(labels=existing_labels, cluster_centers=None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=False, output_directory=output_directory)
         return reduced_dataset_agglomerative

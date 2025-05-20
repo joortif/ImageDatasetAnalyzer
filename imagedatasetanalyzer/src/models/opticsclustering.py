@@ -138,7 +138,7 @@ class OPTICSClustering(ClusteringBase):
             optics = OPTICS(min_samples=min_samples)
             existing_labels = optics.fit_predict(self.embeddings)
 
-        reduced_dataset_optics = self._select_balanced_images(existing_labels, None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_optics = self._select_balanced_images(labels=existing_labels, cluster_centers=None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=include_outliers, output_directory=output_directory)
 
         return reduced_dataset_optics

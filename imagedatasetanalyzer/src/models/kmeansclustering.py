@@ -155,6 +155,7 @@ class KMeansClustering(ClusteringBase):
         labels = kmeans.fit_predict(self.embeddings)
         cluster_centers = kmeans.cluster_centers_
 
-        reduced_dataset_kmeans = self._select_balanced_images(labels, cluster_centers, reduction, selection_type, diverse_percentage, False, output_directory)
+        reduced_dataset_kmeans = self._select_balanced_images(labels=labels, cluster_centers=cluster_centers, reduction=reduction, 
+                                                              selection_type=selection_type, diverse_percentage=diverse_percentage, include_outliers=False, output_directory=output_directory)
 
         return reduced_dataset_kmeans
