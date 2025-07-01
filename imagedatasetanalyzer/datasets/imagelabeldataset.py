@@ -6,15 +6,11 @@ import time
 
 import pandas as pd
 from tqdm import tqdm
-
-from PIL import Image
 import cv2
 
 import matplotlib.pyplot as plt
 
-
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class ImageLabelDataset(ImageDataset):
     """
@@ -107,11 +103,22 @@ class ImageLabelDataset(ImageDataset):
         labels_arr = []
 
         for label in label_files:
-            fpath = os.path.join(self.label_dir, label)
-            with Image.open(fpath) as label_img:
-                label_arr = np.array(label_img)
 
-                labels_arr.append(label_arr)
+            fpath = os.path.join(self.label_dir, label)
+
+            img_color = cv2.imread(fpath, cv2.IMREAD_UNCHANGED)
+            if len(img_color.shape) == 2:
+                label_arr = img_color  
+            elif len(img_color.shape) == 3 and img_color.shape[2] == 3:
+                b, g, r = cv2.split(img_color)
+                if np.array_equal(b, g) and np.array_equal(b, r):
+                    label_arr = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
+                else:
+                    label_arr = img_color  
+            else:
+                label_arr = img_color
+
+            labels_arr.append(label_arr)
 
         return labels_arr
     
@@ -465,8 +472,8 @@ class ImageLabelDataset(ImageDataset):
             label_file = os.path.join(self.label_dir, f"{base_name}.png")
             
             if os.path.exists(label_file):  
-                label_files.append(label_file)
-
+                label_files.append(f"{base_name}.png")
+            
         self.logger.info("Calculating image sizes...")
         self._image_sizes(self.img_dir, self.image_files, self.logger)
         

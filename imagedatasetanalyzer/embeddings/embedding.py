@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class Embedding:
     """
@@ -15,7 +15,7 @@ class Embedding:
             Transforms a batch of images into a format suitable for embedding generation.
     """
     def generate_embeddings(self, dataset: ImageDataset) -> np.ndarray:
-        pass
+        raise NotImplementedError("Subclasses must implement this method")
 
     def _transform_image(self, batch) -> torch.Tensor:
-        pass
+        raise NotImplementedError("Subclasses must implement this method")

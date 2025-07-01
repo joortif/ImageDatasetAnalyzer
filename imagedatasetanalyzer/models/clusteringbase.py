@@ -13,7 +13,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class ClusteringBase():
 
@@ -205,7 +205,7 @@ class ClusteringBase():
     def _select_images(self, cluster_embeddings, cluster_filenames, cluster_centers, cluster_idx,
                         num_selected_images, num_diverse_images, selection_type):
         """
-        Selects representative or diverse images from a cluster.
+        Selects representative, diverse or random images from a cluster.
         """
 
         if selection_type.lower() == "random":
@@ -235,7 +235,7 @@ class ClusteringBase():
 
         return np.unique(np.concatenate((selected_images, diverse_images)))
 
-    def _select_balanced_images(self, labels: np.ndarray, reduction: float, selection_type: str,
+    def _select_balanced_images(self, labels: np.ndarray, retention_percentage: float, selection_type: str,
                                diverse_percentage: float, include_outliers: bool, output_directory: str, cluster_centers:  Optional[np.ndarray] = None):
         """
         Selects a balanced subset of images.
@@ -283,7 +283,7 @@ class ClusteringBase():
 
             total_images = len(images_embeddings)
         
-        num_selected_images_total = int(total_images * reduction)
+        num_selected_images_total = int(total_images * retention_percentage)
         group_sizes = [np.sum(labels == cluster_idx) for cluster_idx in np.unique(labels)]
 
         if output_directory:
@@ -328,4 +328,10 @@ class ClusteringBase():
         print(f"Dataset reduced to {len(reduced_dataset)} images.")
 
         return reduced_dataset
+
+    def clustering(self, reduction, output, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method")
+    
+    def reduce_images(self, retention_percentage, selection_type, diverse_percentage, output_directory, **kwargs):
+        raise NotImplementedError("Subclasses must implement this method")
 

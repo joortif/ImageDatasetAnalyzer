@@ -3,4 +3,4 @@ __pycache__/
 *.pyc
 dist/
 imagedatasetanalyzer.egg-info/
-imagedatasetanalyzer/tests
+tests/

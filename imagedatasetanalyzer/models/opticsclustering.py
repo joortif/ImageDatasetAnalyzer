@@ -4,9 +4,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-
+from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class OPTICSClustering(ClusteringBase):
     """
@@ -117,7 +116,7 @@ class OPTICSClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, min_samples: int=5, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, min_samples: int=5, retention_percentage: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on OPTICS clustering.
@@ -138,7 +137,7 @@ class OPTICSClustering(ClusteringBase):
             optics = OPTICS(min_samples=min_samples)
             existing_labels = optics.fit_predict(self.embeddings)
 
-        reduced_dataset_optics = self._select_balanced_images(labels=existing_labels, cluster_centers=None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_optics = self._select_balanced_images(labels=existing_labels, cluster_centers=None, retention_percentage=retention_percentage, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=include_outliers, output_directory=output_directory)
 
         return reduced_dataset_optics

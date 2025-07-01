@@ -5,8 +5,8 @@ import sklearn.cluster
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class AgglomerativeClustering(ClusteringBase):
     """
@@ -40,13 +40,13 @@ class AgglomerativeClustering(ClusteringBase):
 
         results = []
         scores_by_linkage = {linkage: [] for linkage in linkages}
+        scoring_function = self._evaluate_metric(metric)
 
         for linkage in linkages:
             for k in n_clusters_range:
                 agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=k, linkage=linkage)
                 agglomerative_labels = agglomerative.fit_predict(self.embeddings)
 
-                scoring_function = self._evaluate_metric(metric)
 
                 score = scoring_function(self.embeddings, agglomerative_labels)
                 scores_by_linkage[linkage].append(score)
@@ -97,7 +97,7 @@ class AgglomerativeClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, n_clusters: int=3, linkage: str='ward', reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, n_clusters: int=3, linkage: str='ward', retention_percentage: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on AgglomerativeClustering.
@@ -118,6 +118,6 @@ class AgglomerativeClustering(ClusteringBase):
             agglomerative = sklearn.cluster.AgglomerativeClustering(n_clusters=n_clusters, linkage=linkage)
             existing_labels = agglomerative.fit_predict(self.embeddings)
 
-        reduced_dataset_agglomerative = self._select_balanced_images(labels=existing_labels, cluster_centers=None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_agglomerative = self._select_balanced_images(labels=existing_labels, cluster_centers=None, retention_percentage=retention_percentage, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=False, output_directory=output_directory)
         return reduced_dataset_agglomerative

@@ -7,8 +7,8 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch
 
-from imagedatasetanalyzer.src.embeddings.embedding import Embedding
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.embeddings.embedding import Embedding
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class OpenCVLBPEmbedding(Embedding):
     """

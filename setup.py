@@ -26,9 +26,9 @@ def remove_requirements(requirements, remove_elem):
 def install_pytorch_for_gpu():
     """Try to install PyTorch and Torchvision with GPU support (CUDA)"""
     print('Checking for GPU support...')
-    cuda_version = "cu116"  # Update this if you want to use a different CUDA version
-    torch_version = f"torch==1.13.1+{cuda_version}"
-    torchvision_version = f"torchvision==0.14.1+{cuda_version}"
+    cuda_version = "cu118"  # Update this if you want to use a different CUDA version
+    torch_version = f"torch==2.1.0+{cuda_version}"
+    torchvision_version = f"torchvision==0.15.2+{cuda_version}"
 
     try:
         subprocess.check_call([
@@ -78,7 +78,7 @@ if sys.platform in ['win32', 'cygwin', 'windows']:
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.3.3',
+    version = '0.3.8',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',

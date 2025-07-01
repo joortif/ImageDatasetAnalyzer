@@ -8,7 +8,7 @@ from collections import defaultdict
 import logging
 from tqdm import tqdm
 
-from imagedatasetanalyzer.src.utils.metrics import compute_LPIPS, compute_SSIM
+from imagedatasetanalyzer.utils.metrics import compute_LPIPS, compute_SSIM
 
 class ImageDataset(Dataset):
     """

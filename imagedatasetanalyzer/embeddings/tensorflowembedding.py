@@ -1,17 +1,14 @@
 import re
-
 import tensorflow as tf
 
 from torch.utils.data import DataLoader
-
 from tqdm import tqdm
 
 import torch
 import numpy as np
 
-from imagedatasetanalyzer.src.embeddings.embedding import Embedding
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-
+from imagedatasetanalyzer.embeddings.embedding import Embedding
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class TensorflowEmbedding(Embedding):
     """

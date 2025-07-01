@@ -4,9 +4,8 @@ import torch
 from tqdm import tqdm
 import numpy as np
 
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-from imagedatasetanalyzer.src.embeddings.embedding import Embedding
-
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.embeddings.embedding import Embedding
 
 class HuggingFaceEmbedding(Embedding):
     """
@@ -66,7 +65,7 @@ class HuggingFaceEmbedding(Embedding):
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             if device.type == "cuda":
                 device_name = torch.cuda.get_device_name(device.index)  
-                print(f"Device not detected. Using GPU: {device_name}")
+                print(f"Device detected. Using GPU: {device_name}")
             else:
                 print("Device not detected. Using CPU.")
         

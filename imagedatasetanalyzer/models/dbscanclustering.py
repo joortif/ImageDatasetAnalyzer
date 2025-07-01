@@ -4,8 +4,8 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
-from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class DBSCANClustering(ClusteringBase):
     """
@@ -138,7 +138,7 @@ class DBSCANClustering(ClusteringBase):
 
         return labels
     
-    def select_balanced_images(self, eps: float=0.5, min_samples: int=5, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, eps: float=0.5, min_samples: int=5, retention_percentage: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, include_outliers: bool=False, existing_labels: np.ndarray = None, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on DBSCAN clustering.
@@ -160,7 +160,7 @@ class DBSCANClustering(ClusteringBase):
             dbscan = DBSCAN(eps=eps, min_samples=min_samples)
             existing_labels = dbscan.fit_predict(self.embeddings)
 
-        reduced_dataset_dbscan = self._select_balanced_images(labels=existing_labels, cluster_centers=None, reduction=reduction, selection_type=selection_type, diverse_percentage=diverse_percentage, 
+        reduced_dataset_dbscan = self._select_balanced_images(labels=existing_labels, cluster_centers=None, retention_percentage=retention_percentage, selection_type=selection_type, diverse_percentage=diverse_percentage, 
                                                               include_outliers=include_outliers, output_directory=output_directory)
 
         return reduced_dataset_dbscan

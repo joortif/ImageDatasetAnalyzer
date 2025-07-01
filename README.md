@@ -44,7 +44,7 @@ This package includes 3 main modules for **Analysis**, **Embedding generation an
 You can analyze the dataset and explore its properties, obtain metrics and visualizations. This module works both for image datasets with labels and for just image datasets.
 
 ```python
-from imagedatasetanalyzer.src.datasets.imagelabeldataset import ImageLabelDataset
+from imagedatasetanalyzer.datasets.imagelabeldataset import ImageLabelDataset
 
 # Define paths to the images and labels
 img_dir = r"images/path"
@@ -67,9 +67,9 @@ image_dataset.analyze()
 This module is used to generate embeddings for your images and then perform clustering using different algorithms (e.g., K-Means, DBSCAN). Here’s how to generate embeddings and perform clustering:
 
 ```python
-from imagedatasetanalyzer.src.embeddings.huggingfaceembedding import HuggingFaceEmbedding
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-from imagedatasetanalyzer.src.models.kmeansclustering import KMeansClustering
+from imagedatasetanalyzer.embeddings.huggingfaceembedding import HuggingFaceEmbedding
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.models.kmeansclustering import KMeansClustering
 import numpy as np
 
 # Define image dataset directory
@@ -101,9 +101,9 @@ kmeans.clustering(num_clusters=best_k, reduction='tsne', output='tsne_reduction'
 This feature allows reducing a dataset based on various clustering methods. You can use different clustering techniques to select a smaller subset of images from the dataset. It can be done selecting those images that are closer to the centroid of each cluster (```selection_type=representative```), selecting those that are farthest (```selection_type=diverse```) or randomly (```selection_type=random```).
 
 ```python
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
-from imagedatasetanalyzer.src.embeddings.tensorflowembedding import TensorflowEmbedding
-from imagedatasetanalyzer.src.models.kmeansclustering import KMeansClustering
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.embeddings.tensorflowembedding import TensorflowEmbedding
+from imagedatasetanalyzer.models.kmeansclustering import KMeansClustering
 
 # Define paths
 img_dir = r"images/path"

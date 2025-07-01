@@ -6,8 +6,8 @@ from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imagedatasetanalyzer.src.models.clusteringbase import ClusteringBase
-from imagedatasetanalyzer.src.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
+from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
 class KMeansClustering(ClusteringBase): 
     """
@@ -65,7 +65,8 @@ class KMeansClustering(ClusteringBase):
 
         return best_k
 
-    def find_best_n_clusters(self, n_clusters_range: range, metric: str, plot: bool=True, output: str=None) -> tuple:
+    def find_best_n_clusters(self, n_clusters_range: range, metric: str, 
+                            plot: bool=True, output: str=None) -> tuple:
         """
         Evaluates KMeans clustering using the specified metric.
 
@@ -76,21 +77,18 @@ class KMeansClustering(ClusteringBase):
             output (str, optional): Path to save the plot as an image. If None, the plot is displayed.
 
         Returns:
-            tuple: The best k and the best score.
+            tuple: The best k, random seed used, the best score and assigned labels.
         """
-
         scoring_function = self._evaluate_metric(metric)
         results = []
-        
+    
         for k in n_clusters_range:
             kmeans = KMeans(n_clusters=k)
             labels = kmeans.fit_predict(self.embeddings)
 
             score = scoring_function(self.embeddings, labels)
             results.append((k, score, labels))
-        
         scores = [score for _, score, _ in results]
-
         if plot:
             plt.figure(figsize=(10, 7))
             plt.plot(n_clusters_range, scores, marker='o', linestyle='--')
@@ -106,10 +104,7 @@ class KMeansClustering(ClusteringBase):
                 print(f"Plot saved to {output}")
                 plt.close()
 
-            
-
         best_n_clusters, best_score, best_labels = max(results, key=lambda x: x[1]) if metric != 'davies' else min(results, key=lambda x: x[1])
-
         return best_n_clusters, self.random_state, best_score, best_labels
 
     def clustering(self, n_clusters: int, reduction='tsne',  output: str=None) -> np.ndarray:
@@ -135,7 +130,7 @@ class KMeansClustering(ClusteringBase):
         
         return labels
     
-    def select_balanced_images(self, n_clusters: int=3, reduction: float=0.5, selection_type: str = "representative", 
+    def select_balanced_images(self, n_clusters: int=3, retention_percentage: float=0.5, selection_type: str = "representative", 
                                diverse_percentage: float = 0.1, output_directory: str = None) -> ImageDataset:
         """
         Selects a subset of images from a dataset based on KMeans clustering and its centroids.
@@ -155,7 +150,7 @@ class KMeansClustering(ClusteringBase):
         labels = kmeans.fit_predict(self.embeddings)
         cluster_centers = kmeans.cluster_centers_
 
-        reduced_dataset_kmeans = self._select_balanced_images(labels=labels, cluster_centers=cluster_centers, reduction=reduction, 
+        reduced_dataset_kmeans = self._select_balanced_images(labels=labels, cluster_centers=cluster_centers, retention_percentage=retention_percentage, 
                                                               selection_type=selection_type, diverse_percentage=diverse_percentage, include_outliers=False, output_directory=output_directory)
 
         return reduced_dataset_kmeans
