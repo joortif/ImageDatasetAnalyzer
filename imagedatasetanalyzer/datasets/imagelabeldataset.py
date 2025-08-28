@@ -11,6 +11,7 @@ import cv2
 import matplotlib.pyplot as plt
 
 from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+from imagedatasetanalyzer.utils.preprocessing import preprocess_mask
 
 class ImageLabelDataset(ImageDataset):
     """
@@ -46,7 +47,7 @@ class ImageLabelDataset(ImageDataset):
 
         self.log_file = None
 
-    def _compare_directories(self, verbose):
+    def compare_directories(self, verbose):
         """
         Compares the contents of the image and label directories to check for filename mismatches.
 
@@ -122,7 +123,7 @@ class ImageLabelDataset(ImageDataset):
 
         return labels_arr
     
-    def _get_classes_from_labels(self, labels, verbose=False):
+    def get_classes_from_labels(self, labels, verbose=False):
         """
         Extracts unique classes from the label data.
 
@@ -166,6 +167,7 @@ class ImageLabelDataset(ImageDataset):
             dict: A dictionary where keys are class IDs and values are tuples of
                 (list of contours, number of images containing objects of that class).
         """
+    
         contours_dict = {}
 
         for _, mask in enumerate(labels):
@@ -177,15 +179,17 @@ class ImageLabelDataset(ImageDataset):
 
                 class_mask = np.where(mask == class_id, 255, 0).astype(np.uint8)
 
-                contours, _ = cv2.findContours(class_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) 
+                clean_mask = preprocess_mask(class_mask)
+
+                contours, _ = cv2.findContours(clean_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) 
 
                 if class_id not in contours_dict:
                     contours_dict[class_id] = [[], 0]
+                    
                 contours_dict[class_id][0].extend(contours)  
                 contours_dict[class_id][1] += 1  
 
         contours_dict = {k: v for k, v in sorted(contours_dict.items())}
-        
 
         if verbose:
             self.logger.info("Contours for classes:")
@@ -463,7 +467,7 @@ class ImageLabelDataset(ImageDataset):
             start_time = time.time()
             self.logger.info("Starting dataset analysis. Saving log to %s", log_path)
 
-        self._compare_directories(verbose=verbose)
+        self.compare_directories(verbose=verbose)
 
         label_files = []
         for img_file in self.image_files:
@@ -474,17 +478,13 @@ class ImageLabelDataset(ImageDataset):
             if os.path.exists(label_file):  
                 label_files.append(f"{base_name}.png")
             
-        self.logger.info("Calculating image sizes...")
-        self._image_sizes(self.img_dir, self.image_files, self.logger)
         
-        self.logger.info("Calculating label sizes...")
-        self._image_sizes(self.label_dir, label_files, self.logger)
 
-        self._dataset_similarity(similarity_index, self.logger)
+        self.dataset_similarity(similarity_index, self.logger)
 
         labels_arr = self._labels_to_array(label_files)
 
-        classes = self._get_classes_from_labels(labels_arr, verbose)
+        classes = self.get_classes_from_labels(labels_arr, verbose)
 
         if self.class_map is not None and len(self.class_map) != 0 and len(self.class_map) != len(classes):
             self.logger.info(

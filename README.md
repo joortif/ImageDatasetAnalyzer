@@ -113,8 +113,9 @@ dataset = ImageDataset(img_dir)
 
 # Choose embedding method. We are using MobileNetV2 from Tensorflow.
 emb = TensorflowEmbedding("MobileNetV2")
-embeddings = emb.generate_embeddings(dataset)
+embeddings_dict = emb.generate_embeddings(dataset)
 
+embeddings = list(embeddings_dict.values())
 # Initialize KMeans clustering
 kmeans = KMeansClustering(dataset, embeddings, random_state=123)
 
@@ -127,10 +128,10 @@ best_k = kmeans.find_best_n_clusters(range(2,25), 'silhouette', plot=False)
 # and ensuring that 20% of the selected images within each cluster are diverse (diverse_percentage=0.2).
 # The reduced dataset will be saved to the specified output directory ("reduced/dataset/path")
 reduced_dataset = kmeans.select_balanced_images(n_clusters=best_k, 
-                                                reduction=0.7, 
+                                                retention_percentage=0.7, 
                                                 selection_type='representative', 
                                                 diverse_percentage=0.2, 
-                                                output="reduced/dataset/path")
+                                                output_directory="reduced/dataset/path")
 ```
 
 ## 🧰 Requirements

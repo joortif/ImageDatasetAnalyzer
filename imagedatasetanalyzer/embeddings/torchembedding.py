@@ -57,7 +57,7 @@ class PyTorchEmbedding(Embedding):
             device (torch.device, optional): Device to use for computation. Defaults to the best available device.
 
         Returns:
-            torch.Tensor: A tensor containing the embeddings for all images in the dataset.
+            dict: A dictionary mapping each image from the dataset with its corresponding embedding.
         """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -68,7 +68,8 @@ class PyTorchEmbedding(Embedding):
                 print("Device not detected. Using CPU.")
                 
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))        
-        embeddings = []
+        embeddings_dict = {}
+        start_idx = 0
         self.model.to(device)
         
         for batch in tqdm(dataloader, desc="Generating embeddings..."):
@@ -77,7 +78,13 @@ class PyTorchEmbedding(Embedding):
                 outputs = self.model(batch)
                 if len(outputs.shape) == 4:
                     outputs = outputs.mean(dim=[2, 3])
+                
+            outputs_np = outputs.cpu().numpy()
+            filenames = dataset.image_files[start_idx: start_idx + len(batch)]
 
-                embeddings.append(outputs.squeeze().cpu().numpy())
+            for filename, embedding in zip(filenames, outputs_np):
+                embeddings_dict[filename] = embedding
             
-        return np.concatenate(embeddings, axis=0)
+            start_idx += len(batch)
+
+        return embeddings_dict

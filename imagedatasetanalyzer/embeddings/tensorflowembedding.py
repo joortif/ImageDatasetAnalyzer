@@ -133,7 +133,7 @@ class TensorflowEmbedding(Embedding):
                                     it will be used. Defaults to CPU if not specified or if GPU is unavailable.
 
         Returns:
-            np.ndarray: A NumPy array containing the embeddings for all images in the dataset.
+            dict: A dictionary mapping each image from the dataset with its corresponding embedding.
         """
         
         if device is None:
@@ -147,26 +147,30 @@ class TensorflowEmbedding(Embedding):
         else:
             print("Device not detected or specified. Using CPU.")  
         
-        
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
 
-        embeddings = []
+        embeddings_dict = {}
 
+        start_idx = 0
         for batch in tqdm(dataloader, desc="Generando embeddings..."):
             
-            batch_tensor = tf.convert_to_tensor(batch, dtype=tf.float32)
-            features = self.model(batch_tensor, training=False)
+            batch_tensor = tf.convert_to_tensor(batch, dtype=tf.float32)            
 
             if batch_tensor.shape[-1] != 3:  
                 raise ValueError("Images must have 3 channels (RGB) in channels_last format.")
 
-            features = self.model(batch_tensor, training=False)
+            outputs = self.model(batch_tensor, training=False)
             
-            if len(features.shape) == 4: 
-
-                global_max_pool = tf.reduce_max(features, axis=(1, 2)) 
-                embeddings.append(global_max_pool.numpy())
+            if len(outputs.shape) == 4: 
+                embeddings = tf.reduce_max(outputs, axis=(1, 2)) 
             else:
-                raise ValueError(f"Expected 4D tensor (batch_size, height, width, channels), but got shape: {features.shape}")
+                raise ValueError(f"Expected 4D tensor (batch_size, height, width, channels), but got shape: {outputs.shape}")
+            
+            batch_filenames = dataset.image_files[start_idx:start_idx + len(batch)]
 
-        return np.vstack(embeddings)
+            for file, emb in zip(batch_filenames, embeddings):
+                    embeddings_dict[file] = emb
+            
+            start_idx += len(batch)
+
+        return embeddings_dict

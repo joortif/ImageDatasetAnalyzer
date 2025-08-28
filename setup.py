@@ -28,7 +28,7 @@ def install_pytorch_for_gpu():
     print('Checking for GPU support...')
     cuda_version = "cu118"  # Update this if you want to use a different CUDA version
     torch_version = f"torch==2.1.0+{cuda_version}"
-    torchvision_version = f"torchvision==0.15.2+{cuda_version}"
+    torchvision_version = f"torchvision==0.16.0+{cuda_version}"
 
     try:
         subprocess.check_call([
@@ -42,8 +42,8 @@ def install_pytorch_for_gpu():
 
 def install_pytorch_for_cpu():
     """Fallback to install PyTorch and Torchvision with CPU support"""
-    torch_version = "torch>=1.13.0,<2.0.0"
-    torchvision_version = "torchvision>=0.14.0,<1.0.0"
+    torch_version = "torch==2.1.0"
+    torchvision_version = "torchvision==0.16.0"
 
     try:
         subprocess.check_call([
@@ -63,8 +63,8 @@ def check_and_install_pytorch():
     """Check if PyTorch and Torchvision are installed and compatible"""
     try:
         # Check if torch and torchvision are installed and compatible with the versions in requirements.txt
-        pkg_resources.require("torch>=1.13.0,<2.0.0")
-        pkg_resources.require("torchvision>=0.14.0,<1.0.0")
+        pkg_resources.require("torch>=2.1.0")
+        pkg_resources.require("torchvision>=0.16.0")
         print("Required versions of PyTorch and Torchvision are already installed.")
     except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
         print("PyTorch or Torchvision not found or incompatible, installing the correct versions...")
@@ -78,7 +78,7 @@ if sys.platform in ['win32', 'cygwin', 'windows']:
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.3.8',
+    version = '0.3.12',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',

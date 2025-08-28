@@ -70,13 +70,15 @@ class OpenCVLBPEmbedding(Embedding):
             ImageDataset: Dataset of images to generate embeddings for.
 
         Returns:
-            np.ndarray: NumPy array where each row corresponds to the LBP-based histogram embedding of an image 
-            in the dataset.
+            dict: A dictionary mapping each image from the dataset with its LBP-based histogram embedding.
         """
-        embeddings = []
+        embeddings_dict = {}
+        start_idx=0
 
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
         for batch in tqdm(dataloader, "Generating embeddings..."):
+
+            histograms = []
             for gray_image in batch:
                 lbp = local_binary_pattern(gray_image, self.num_points, self.radius, self.method)
 
@@ -86,6 +88,13 @@ class OpenCVLBPEmbedding(Embedding):
                     range=(0, self.num_points + 2),
                 )
                 hist = hist.astype("float") / hist.sum()
-                embeddings.append(hist)
+                histograms.append(hist)
 
-        return np.array(embeddings)
+            batch_filenames = dataset.image_files[start_idx:start_idx + len(batch)]
+
+            for file, emb in zip(batch_filenames, histograms):
+                embeddings_dict[file] = emb
+
+            start_idx+=len(batch)
+
+        return embeddings_dict

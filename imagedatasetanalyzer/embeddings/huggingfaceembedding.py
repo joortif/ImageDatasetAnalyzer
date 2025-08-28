@@ -59,7 +59,7 @@ class HuggingFaceEmbedding(Embedding):
             device (torch.device, optional): Device to use for computation. Defaults to the best available device.
 
         Returns:
-            torch.Tensor: Embeddings generated for all images in the dataset.
+            dict: A dictionary mapping each image from the dataset with its corresponding embedding.
         """
         if device is None:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -71,9 +71,10 @@ class HuggingFaceEmbedding(Embedding):
         
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False, collate_fn=lambda batch: self._transform_image(batch))
         
-        embeddings = []
+        embeddings_dict = {}
         self.model.to(device)
         
+        start_idx = 0
         for batch in tqdm(dataloader, desc="Generating embeddings..."):
             batch = batch.to(device)
 
@@ -83,7 +84,14 @@ class HuggingFaceEmbedding(Embedding):
                 else:
                     outputs = self.model(pixel_values=batch).last_hidden_state[:, 0]
 
-                    
-            embeddings.append(outputs.cpu().numpy())
+            outputs_np = outputs.cpu().numpy()
 
-        return np.concatenate(embeddings, axis=0)
+            batch_filenames = dataset.image_files[start_idx:start_idx + len(batch)]
+
+            for file, emb in zip(batch_filenames, outputs_np):
+                embeddings_dict[file] = emb
+
+            start_idx+=len(batch)
+
+
+        return embeddings_dict

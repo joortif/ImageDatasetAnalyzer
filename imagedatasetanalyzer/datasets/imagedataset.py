@@ -63,27 +63,40 @@ class ImageDataset(Dataset):
 
         return image
 
-    def _image_sizes(self, directory, files, logger): 
+    def image_sizes(self): 
         """
         Returns the sizes of the images in the directory.
+        Also calculates the average width and height.
         """
         images_sizes = defaultdict(int)
-        for fname in tqdm(files, desc="Reading files"):
-            fpath = os.path.join(directory, fname)
+        total_width = 0
+        total_height = 0
+
+        for fname in tqdm(self.image_files, desc="Reading files"):
+            fpath = os.path.join(self.img_dir, fname)
             with Image.open(fpath) as img:
-                size = img.size
-                images_sizes[size] += 1
+                width, height = img.size
+                total_width += width
+                total_height += height
+                images_sizes[(width, height)] += 1
 
+        mode_height, mode_width = max(set(images_sizes), key=list(images_sizes.values()).count)
         sorted_sizes = sorted(images_sizes.items(), key=lambda item: item[1], reverse=True)
-
         images_sizes = dict(sorted_sizes)
         
         for size, count in images_sizes.items():
             width, height = size
-            percentage = (count / len(files)) * 100
-            logger.info(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
+            percentage = (count / len(self.image_files)) * 100
+            self.logger.info(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
 
-    def _dataset_similarity(self, similarity_index, logger):
+        avg_width = round(total_width / len(self.image_files))
+        avg_height = round(total_height / len(self.image_files))
+        self.logger.info(f"Average image size: {avg_height}x{avg_width}")
+        self.logger.info(f"Image size mode: {mode_height}x{mode_width}")
+
+        return mode_height, mode_width
+
+    def dataset_similarity(self, similarity_index, logger):
 
         if not similarity_index:
             return
@@ -139,7 +152,7 @@ class ImageDataset(Dataset):
             self.logger.setLevel(logging.INFO)
 
         self.logger.info("Calculating image sizes...")
-        self._image_sizes(self.img_dir, self.image_files, self.logger)
+        self.image_sizes(self.logger)
         self.logger.info("Total number of images in the dataset: %s", len(self.image_files))
 
-        self._dataset_similarity(similarity_index, self.logger)
+        self.dataset_similarity(similarity_index, self.logger)
