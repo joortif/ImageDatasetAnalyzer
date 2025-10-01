@@ -180,7 +180,7 @@ class ClusteringBase():
             plt.close()
 
 
-    def _calculate_medoids(self, embeddings=np.ndarray, labels=np.ndarray):
+    def _calculate_medoids(self, embeddings:np.ndarray, labels:np.ndarray):
         """
         Calculates medoids for each cluster.
         """
