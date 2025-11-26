@@ -26,8 +26,10 @@ class MedImageInsightEmbedding(Embedding):
             return f.read()
 
     def image_to_base64(self, img: Image.Image) -> str:
+        if img.mode != "RGB":
+            img = img.convert("RGB")
         buffer = BytesIO()
-        img.save(buffer, format=img.format)
+        img.save(buffer, format="PNG")
         return base64.b64encode(buffer.getvalue()).decode("utf-8")
 
     def _transform_image(self, batch):
