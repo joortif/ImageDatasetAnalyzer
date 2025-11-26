@@ -1,11 +1,14 @@
 import os
 import numpy as np
+import logging
 
 from sklearn.cluster import DBSCAN
 import matplotlib.pyplot as plt
 
 from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
 from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+
+logger = logging.getLogger(__name__)
 
 class DBSCANClustering(ClusteringBase):
     """
@@ -46,14 +49,14 @@ class DBSCANClustering(ClusteringBase):
                 
                 if np.all(labels == -1):
                     if verbose:
-                        self.logger.warning("No clusters found for eps=%s, min_samples=%s. All points are noise.", eps, min_samples)
+                        logger.warning("No clusters found for eps=%s, min_samples=%s. All points are noise.", eps, min_samples)
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
                 unique_labels = np.unique(labels)
                 if len(unique_labels) == len(self.embeddings):
                     if verbose:
-                        self.logger.warning("Each point is assigned to its own cluster for eps=%s, min_samples=%s.", eps, min_samples)
+                        logger.warning("Each point is assigned to its own cluster for eps=%s, min_samples=%s.", eps, min_samples)
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
@@ -63,7 +66,7 @@ class DBSCANClustering(ClusteringBase):
 
                 if len(np.unique(valid_labels)) == 1:
                     if verbose:
-                        self.logger.warning("Only 1 cluster found for eps=%s, min_samples=%s. Can't calculate metric %s.", eps, min_samples, metric.lower())
+                        logger.warning("Only 1 cluster found for eps=%s, min_samples=%s. Can't calculate metric %s.", eps, min_samples, metric.lower())
                     results.append((eps, min_samples, float('inf') if metric == 'davies' else -1, labels))
                     continue
 
@@ -74,7 +77,7 @@ class DBSCANClustering(ClusteringBase):
 
         if best_score == -1:
             if verbose:
-                self.logger.warning("No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+                logger.warning("No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
             return best_eps, best_min_samples, best_score, labels
 
         filtered_min_samples = list(min_samples_range)[:9]

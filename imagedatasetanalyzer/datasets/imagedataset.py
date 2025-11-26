@@ -9,6 +9,9 @@ import logging
 from tqdm import tqdm
 
 from imagedatasetanalyzer.utils.metrics import compute_LPIPS, compute_SSIM
+from imagedatasetanalyzer.utils.constants import VALID_IMAGE_EXTENSIONS
+
+logger = logging.getLogger(__name__)
 
 class ImageDataset(Dataset):
     """
@@ -29,11 +32,13 @@ class ImageDataset(Dataset):
         """
 
         self.img_dir = img_dir
-        self.image_files = image_files        
+        self.image_files = image_files
         if not self.image_files:
-            self.image_files = [f for f in os.listdir(img_dir) if f.endswith(('jpg', 'png'))]
-
-        self.logger = logging.getLogger(self.__class__.__name__)
+            self.image_files = []
+            for f in os.listdir(img_dir):
+                ext = os.path.splitext(f)[1].lower().lstrip('.') 
+                if ext in VALID_IMAGE_EXTENSIONS:
+                    self.image_files.append(f)
 
     def __len__(self):
         return len(self.image_files)
@@ -87,16 +92,16 @@ class ImageDataset(Dataset):
         for size, count in images_sizes.items():
             width, height = size
             percentage = (count / len(self.image_files)) * 100
-            self.logger.info(f"Size {width}x{height}: {count} images ({percentage:.2f}%)")
+            logger.info(f"Size {height}x{width}: {count} images ({percentage:.2f}%)")
 
         avg_width = round(total_width / len(self.image_files))
         avg_height = round(total_height / len(self.image_files))
-        self.logger.info(f"Average image size: {avg_height}x{avg_width}")
-        self.logger.info(f"Image size mode: {mode_height}x{mode_width}")
+        logger.info(f"Average image size: {avg_height}x{avg_width}")
+        logger.info(f"Image size mode: {mode_height}x{mode_width}")
 
         return mode_height, mode_width
 
-    def dataset_similarity(self, similarity_index, logger):
+    def dataset_similarity(self, similarity_index):
 
         if not similarity_index:
             return
@@ -133,26 +138,9 @@ class ImageDataset(Dataset):
         and prints the report to the console. It also calculates SSIM or LPIPS similarity indexes
         from all the dataset optionally.
         """
-        
-        if not self.logger.hasHandlers():
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
 
-            if not log_dir:
-                log_dir = os.getcwd()
+        logger.info("Calculating image sizes...")
+        self.image_sizes()
+        logger.info("Total number of images in the dataset: %s", len(self.image_files))
 
-            file_handler = logging.FileHandler(os.path.join(log_dir, "logs.txt"), mode='w')
-            file_handler.setFormatter(formatter)
-            self.logger.addHandler(file_handler)
-                
-            if verbose:
-                stream_handler = logging.StreamHandler()
-                stream_handler.setFormatter(formatter)
-                self.logger.addHandler(stream_handler)
-
-            self.logger.setLevel(logging.INFO)
-
-        self.logger.info("Calculating image sizes...")
-        self.image_sizes(self.logger)
-        self.logger.info("Total number of images in the dataset: %s", len(self.image_files))
-
-        self.dataset_similarity(similarity_index, self.logger)
+        self.dataset_similarity(similarity_index)

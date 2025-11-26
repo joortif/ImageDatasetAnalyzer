@@ -4,6 +4,7 @@ from .embeddings import HuggingFaceEmbedding
 from .embeddings import OpenCVLBPEmbedding 
 from .embeddings import TensorflowEmbedding
 from .embeddings import PyTorchEmbedding
+from .embeddings import MedImageInsightEmbedding
 from .models import KMeansClustering 
 from .models import AgglomerativeClustering 
 from .models import DBSCANClustering 

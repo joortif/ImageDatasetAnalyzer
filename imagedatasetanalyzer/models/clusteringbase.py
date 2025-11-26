@@ -15,6 +15,8 @@ from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bo
 
 from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 
+logger = logging.getLogger(__name__)
+
 class ClusteringBase():
 
     """
@@ -39,16 +41,6 @@ class ClusteringBase():
         self.dataset = dataset
         self.embeddings = embeddings
         self.random_state = random_state
-
-        self.logger = logging.getLogger(self.__class__.__name__)
-        if not self.logger.hasHandlers():  
-            handler = logging.StreamHandler()  
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
-            self.logger.setLevel(logging.INFO)
 
     def _evaluate_metric(self, metric: str):
         if metric == 'silhouette':

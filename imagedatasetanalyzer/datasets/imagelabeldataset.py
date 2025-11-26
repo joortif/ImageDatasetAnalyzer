@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 
 from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
 from imagedatasetanalyzer.utils.preprocessing import preprocess_mask
+from imagedatasetanalyzer.utils.constants import VALID_IMAGE_EXTENSIONS
+
+
+logger = logging.getLogger(__name__)
 
 class ImageLabelDataset(ImageDataset):
     """
@@ -42,8 +46,7 @@ class ImageLabelDataset(ImageDataset):
         self.background = background
         self.class_map = class_map
 
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self.logger.setLevel(logging.DEBUG)
+        
 
         self.log_file = None
 
@@ -59,7 +62,7 @@ class ImageLabelDataset(ImageDataset):
             FileNotFoundError: If masks or images are missing in either directory.
         """
         if verbose:
-            self.logger.info(f"Comparing directories: {self.img_dir} and {self.label_dir}...")
+            logger.info(f"Comparing directories: {self.img_dir} and {self.label_dir}...")
 
         images_files = os.listdir(self.img_dir)
         labels_files = os.listdir(self.label_dir)
@@ -68,10 +71,10 @@ class ImageLabelDataset(ImageDataset):
         label_names = {os.path.splitext(file)[0] for file in os.listdir(self.label_dir)}
 
         if len(image_names) != len(images_files):
-            self.logger.warning(f"Warning: There are duplicate filenames in {self.img_dir}.")
+            logger.warning(f"Warning: There are duplicate filenames in {self.img_dir}.")
 
         if len(label_names) != len(labels_files):
-            self.logger.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
+            logger.warning(f"Warning: There are duplicate filenames in {self.label_dir}.")
 
         missing_masks = image_names - label_names
         missing_images = label_names - image_names
@@ -79,17 +82,17 @@ class ImageLabelDataset(ImageDataset):
         if missing_masks:
             if verbose:
                 for name in missing_masks:
-                    self.logger.warning(f"Image '{name}' in {self.img_dir} does not have a corresponding mask in {self.label_dir}")
+                    logger.warning(f"Image '{name}' in {self.img_dir} does not have a corresponding mask in {self.label_dir}")
             raise FileNotFoundError(f"Missing masks for the following images: {missing_masks}")
 
         if missing_images:
             if verbose:
                 for name in missing_images:
-                    self.logger.warning(f"Mask '{name}' in {self.label_dir} does not have a corresponding image in {self.img_dir}")
+                    logger.warning(f"Mask '{name}' in {self.label_dir} does not have a corresponding image in {self.img_dir}")
             raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
 
-        self.logger.info(f"{self.img_dir} and {self.label_dir} have matching filenames.")
-        self.logger.info(f"Total number of annotated images: {len(image_names)}")
+        logger.info(f"{self.img_dir} and {self.label_dir} have matching filenames.")
+        logger.info(f"Total number of annotated images: {len(image_names)}")
 
     def _labels_to_array(self, label_files):
         """
@@ -135,7 +138,7 @@ class ImageLabelDataset(ImageDataset):
             set: A set of unique class identifiers found in the labels.
         """
         if verbose:
-            self.logger.info(f"Checking total number of classes from dataset labels...")
+            logger.info(f"Checking total number of classes from dataset labels...")
         
         unique_classes = set()
 
@@ -148,11 +151,11 @@ class ImageLabelDataset(ImageDataset):
 
         if verbose:
             if len(unique_classes) == 2:
-                self.logger.info("The labels from the dataset are binary.")
+                logger.info("The labels from the dataset are binary.")
             else:
-                self.logger.info("The labels from the dataset are multiclass.")
+                logger.info("The labels from the dataset are multiclass.")
         
-        self.logger.info("%d classes found from dataset labels: %s", len(unique_classes), unique_classes)
+        logger.info("%d classes found from dataset labels: %s", len(unique_classes), unique_classes)
         return unique_classes
     
     def _find_contours(self, labels, verbose):
@@ -192,10 +195,10 @@ class ImageLabelDataset(ImageDataset):
         contours_dict = {k: v for k, v in sorted(contours_dict.items())}
 
         if verbose:
-            self.logger.info("Contours for classes:")
+            logger.info("Contours for classes:")
             for class_id, (contours, total_count) in contours_dict.items():
                 class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
-                self.logger.info("Class %s: %d total objects across %d/%d images.", class_name, len(contours), total_count, len(labels))
+                logger.info("Class %s: %d total objects across %d/%d images.", class_name, len(contours), total_count, len(labels))
 
         return contours_dict
     
@@ -221,7 +224,7 @@ class ImageLabelDataset(ImageDataset):
         if output:
             boxplot_path = os.path.join(output, "object_areas_boxplot.png")
             plt.savefig(boxplot_path, format='png')
-            self.logger.info("Boxplot saved to %s", boxplot_path)
+            logger.info("Boxplot saved to %s", boxplot_path)
             plt.close()
     
     def _save_metrics_csv(self, metrics, output):
@@ -249,7 +252,7 @@ class ImageLabelDataset(ImageDataset):
         output_path = os.path.join(output, "metrics.csv")
 
         df.to_csv(output_path, index=False, sep=";", decimal=",")
-        self.logger.info("Metrics saved to CSV at %s", output_path)
+        logger.info("Metrics saved to CSV at %s", output_path)
         return
 
 
@@ -304,25 +307,25 @@ class ImageLabelDataset(ImageDataset):
 
             class_name = self.class_map[class_id] if self.class_map is not None and class_id in self.class_map else class_id
 
-            self.logger.info("------------------------------------")
-            self.logger.info("CLASS %s METRICS:", str(class_name).upper())
-            self.logger.info("-----------Object metrics-----------")
-            self.logger.info("Average objects per image: %.2f", avg_class_objects_per_image)
-            self.logger.info("Average object area: %.2f", obj_mean)
-            self.logger.info("Standard deviation of object area: %.2f", obj_std)
-            self.logger.info("Max object area: %.2f", obj_max)
-            self.logger.info("Min object area: %.2f", obj_min)
-            self.logger.info("-----------Bounding boxes metrics-----------")
-            self.logger.info("Average bounding box area: %.2f", bb_mean)
-            self.logger.info("Standard deviation of bounding box area: %.2f", bb_std)
-            self.logger.info("Max bounding box area: %.2f", bb_max)
-            self.logger.info("Min bounding box area: %.2f", bb_min)
-            self.logger.info("-----------Ellipses metrics-----------")
-            self.logger.info("Average ellipse area: %.2f", elip_mean)
-            self.logger.info("Standard deviation of ellipse area: %.2f", elip_std)
-            self.logger.info("Max ellipse area: %.2f", elip_max)
-            self.logger.info("Min ellipse area: %.2f", elip_min)
-            self.logger.info("\n")
+            logger.info("------------------------------------")
+            logger.info("CLASS %s METRICS:", str(class_name).upper())
+            logger.info("-----------Object metrics-----------")
+            logger.info("Average objects per image: %.2f", avg_class_objects_per_image)
+            logger.info("Average object area: %.2f", obj_mean)
+            logger.info("Standard deviation of object area: %.2f", obj_std)
+            logger.info("Max object area: %.2f", obj_max)
+            logger.info("Min object area: %.2f", obj_min)
+            logger.info("-----------Bounding boxes metrics-----------")
+            logger.info("Average bounding box area: %.2f", bb_mean)
+            logger.info("Standard deviation of bounding box area: %.2f", bb_std)
+            logger.info("Max bounding box area: %.2f", bb_max)
+            logger.info("Min bounding box area: %.2f", bb_min)
+            logger.info("-----------Ellipses metrics-----------")
+            logger.info("Average ellipse area: %.2f", elip_mean)
+            logger.info("Standard deviation of ellipse area: %.2f", elip_std)
+            logger.info("Max ellipse area: %.2f", elip_max)
+            logger.info("Min ellipse area: %.2f", elip_min)
+            logger.info("\n")
 
             csv_data.append([
                 class_name, 
@@ -369,7 +372,7 @@ class ImageLabelDataset(ImageDataset):
         self._save_metrics_csv(csv_data, output)
 
         if len(class_ids) <= 1:
-            self.logger.info("Metrics won't be plotted since the dataset has only one class.")
+            logger.info("Metrics won't be plotted since the dataset has only one class.")
             return
 
         if plot:
@@ -427,7 +430,7 @@ class ImageLabelDataset(ImageDataset):
                 if output:  
                     output_path = os.path.join(output, f"{metric_type}_metrics.png")
                     plt.savefig(output_path, format='png')
-                    self.logger.info("Plot saved to %s", output_path)
+                    logger.info("Plot saved to %s", output_path)
                     plt.close()
 
 
@@ -450,44 +453,44 @@ class ImageLabelDataset(ImageDataset):
         log_path = os.path.join(output, "logs.txt")
         self.log_file = log_path
 
-        for handler in self.logger.handlers[:]:
+        for handler in logger.handlers[:]:
             if isinstance(handler, logging.FileHandler):
-                self.logger.removeHandler(handler)
+                logger.removeHandler(handler)
 
         file_handler = logging.FileHandler(log_path, mode='w')
         file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S'))
-        self.logger.addHandler(file_handler)
+        logger.addHandler(file_handler)
 
         if verbose:
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(logging.Formatter('%(levelname)s: %(message)s'))
-            self.logger.addHandler(console_handler)
+            logger.addHandler(console_handler)
 
         if verbose:
             start_time = time.time()
-            self.logger.info("Starting dataset analysis. Saving log to %s", log_path)
+            logger.info("Starting dataset analysis. Saving log to %s", log_path)
 
         self.compare_directories(verbose=verbose)
 
         label_files = []
         for img_file in self.image_files:
             base_name, _ = os.path.splitext(img_file)
-            
-            label_file = os.path.join(self.label_dir, f"{base_name}.png")
-            
-            if os.path.exists(label_file):  
-                label_files.append(f"{base_name}.png")
-            
-        
 
-        self.dataset_similarity(similarity_index, self.logger)
+            for ext in VALID_IMAGE_EXTENSIONS:
+                candidate = os.path.join(self.label_dir, f"{base_name}.{ext}")
+                
+                if os.path.exists(candidate):
+                    label_files.append(f"{base_name}.{ext}")
+                    break 
+            
+        self.dataset_similarity(similarity_index)
 
         labels_arr = self._labels_to_array(label_files)
-
+        
         classes = self.get_classes_from_labels(labels_arr, verbose)
 
         if self.class_map is not None and len(self.class_map) != 0 and len(self.class_map) != len(classes):
-            self.logger.info(
+            logger.info(
                 "Warning: %d classes found automatically but class map contains %d entries. Provided class map won't be used.",
                 len(classes),
                 len(self.class_map)
@@ -499,4 +502,4 @@ class ImageLabelDataset(ImageDataset):
 
         if verbose: 
             exection_time = time.time() - start_time
-            self.logger.info("Total analysis time: %.4f seconds", exection_time)
+            logger.info("Total analysis time: %.4f seconds", exection_time)

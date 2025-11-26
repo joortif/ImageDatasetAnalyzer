@@ -1,4 +1,5 @@
 import os
+import logging
 from sklearn.cluster import OPTICS
 import numpy as np
 
@@ -6,6 +7,8 @@ import matplotlib.pyplot as plt
 
 from imagedatasetanalyzer.models.clusteringbase import ClusteringBase
 from imagedatasetanalyzer.datasets.imagedataset import ImageDataset
+
+logger = logging.getLogger(__name__)
 
 class OPTICSClustering(ClusteringBase):
     """
@@ -42,14 +45,14 @@ class OPTICSClustering(ClusteringBase):
                 
             if np.all(labels == -1):
                 if verbose:
-                    self.logger.warning("No clusters found for min_samples=%s. All points are noise.", min_samples)
+                    logger.warning("No clusters found for min_samples=%s. All points are noise.", min_samples)
                 results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
             unique_labels = np.unique(labels)
             if len(unique_labels) == len(self.embeddings):
                 if verbose:
-                    self.logger.warning("Each point is assigned to its own cluster for min_samples=%s.", min_samples)
+                    logger.warning("Each point is assigned to its own cluster for min_samples=%s.", min_samples)
                 results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
@@ -59,7 +62,7 @@ class OPTICSClustering(ClusteringBase):
 
             if len(np.unique(valid_labels)) == 1:
                 if verbose:
-                    self.logger.warning("Only one cluster and noise cluster found for min_samples=%s. Can't compute %s score.", min_samples, metric.lower())
+                    logger.warning("Only one cluster and noise cluster found for min_samples=%s. Can't compute %s score.", min_samples, metric.lower())
                 results.append((min_samples, float('inf') if metric == 'davies' else 0, labels))
                 continue
 
@@ -70,7 +73,7 @@ class OPTICSClustering(ClusteringBase):
 
         if all(score == 0 for score in scores) or all(score == float('inf') for score in scores):
             if verbose:
-                self.logger.warning("No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
+                logger.warning("No valid clustering found for the ranges given. Try adjusting the parameters for better clustering.")
             plot = False
 
         if plot:

@@ -78,7 +78,7 @@ if sys.platform in ['win32', 'cygwin', 'windows']:
 setup(
     name = 'imagedatasetanalyzer',
 
-    version = '0.4.0',
+    version = '0.4.1',
 
     author = 'Joaquin Ortiz de Murua Ferrero',
     author_email = 'jortizdemuruaferrero@gmail.com',

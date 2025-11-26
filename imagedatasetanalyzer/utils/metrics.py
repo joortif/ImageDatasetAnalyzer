@@ -7,12 +7,14 @@ import cv2
 import numpy as np
 from tqdm import tqdm
 
+from imagedatasetanalyzer.utils.constants import VALID_IMAGE_EXTENSIONS
+
 def _load_images_from_folder(path, resize_to=(384, 384), normalize='01', device='cpu'):
 
     img_paths = sorted([
         os.path.join(path, f)
         for f in os.listdir(path)
-        if f.lower().endswith(('.png', '.jpg'))
+        if os.path.splitext(f)[1].lower().lstrip('.') in VALID_IMAGE_EXTENSIONS
     ])
 
     imgs = []
