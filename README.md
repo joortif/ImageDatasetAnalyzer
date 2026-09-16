@@ -155,4 +155,4 @@ The dependencies and requirements to use this library are in the requirements.tx
 
 ## ✉️ Contact 
 
-📧 jortizdemuruaferrero@gmail.com
+📧 joortif@unirioja.es
