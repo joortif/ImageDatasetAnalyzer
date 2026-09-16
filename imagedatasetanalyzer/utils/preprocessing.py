@@ -10,4 +10,4 @@ def preprocess_mask(mask, kernel_size=5):
             
     _, final_mask = cv2.threshold(smoothed, 127, 255, cv2.THRESH_BINARY)
 
-    return final_mask
+    return final_mask.astype(np.uint8)

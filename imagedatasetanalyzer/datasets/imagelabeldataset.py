@@ -46,13 +46,12 @@ class ImageLabelDataset(ImageDataset):
         self.background = background
         self.class_map = class_map
 
-        
-
         self.log_file = None
 
     def compare_directories(self, verbose):
         """
-        Compares the contents of the image and label directories to check for filename mismatches.
+        Compares the contents of the image and label directories to check for filename and size mismatches.
+        Also compares the sizes of the images and labels to ensure they match.
 
         Args:
             verbose (bool): If True, logs detailed information about discrepancies.
@@ -91,8 +90,44 @@ class ImageLabelDataset(ImageDataset):
                     logger.warning(f"Mask '{name}' in {self.label_dir} does not have a corresponding image in {self.img_dir}")
             raise FileNotFoundError(f"Missing images for the following masks: {missing_images}")
 
+        self._compare_sizes(image_names, verbose)
+
         logger.info(f"{self.img_dir} and {self.label_dir} have matching filenames.")
         logger.info(f"Total number of annotated images: {len(image_names)}")
+
+    def _compare_sizes(self, images_names, verbose):
+        """
+        Compares the sizes of images and their corresponding label masks to ensure they match.
+
+        Args:
+            images_names (set): A set of image filenames.
+            verbose (bool): If True, logs detailed information about size mismatches.
+        """
+
+        incorrect_sizes = []
+
+        for file_name in images_names:
+            image_file = next((f for f in os.listdir(self.img_dir) if os.path.splitext(f)[0] == file_name), None)
+            mask_file = next((f for f in os.listdir(self.label_dir) if os.path.splitext(f)[0] == file_name), None)
+
+            image_path = os.path.join(self.img_dir, image_file)
+            mask_path = os.path.join(self.label_dir, mask_file)
+
+            image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+            mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
+
+            H_img, W_img = image.shape[:2]
+            H_mask, W_mask = mask.shape[:2]
+
+            if H_img != H_mask or W_img != W_mask:
+                incorrect_sizes.append(f"{file_name}: Image {H_img}x{W_img}, Mask {H_mask}x{W_mask}")
+
+        if incorrect_sizes:
+            raise ValueError(f"Size mismatches found:\n" + "\n".join(incorrect_sizes))
+
+        if verbose:
+            logger.info("All images and masks have matching sizes.")
+
 
     def _labels_to_array(self, label_files):
         """
@@ -174,6 +209,10 @@ class ImageLabelDataset(ImageDataset):
         contours_dict = {}
 
         for _, mask in enumerate(labels):
+            
+            if mask.ndim == 3:
+                mask = cv2.cvtColor(mask, cv2.COLOR_RGBA2GRAY)
+            
             unique_classes = np.unique(mask)
 
             for class_id in unique_classes:
