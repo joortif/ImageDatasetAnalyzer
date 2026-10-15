@@ -156,3 +156,7 @@ The dependencies and requirements to use this library are in the requirements.tx
 ## ✉️ Contact 
 
 📧 joortif@unirioja.es
+
+## Acknowledgments
+
+This work is partially supported by Agencia de Desarrollo Económico de La Rioja [ADER 2022-I-IDI-00015], by the Government of La Rioja [Inicia 2023/01, Afianza 2024/01], and by Grant PID2024-155834NB-I00 funded by MICIU/AEI /10.13039/501100011033 and by ERDF/EU.
